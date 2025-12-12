@@ -13,11 +13,12 @@ namespace HeyNowBot
         {
                
         }
-        public async void Run()
+        public async Task RunAsync()
         {
-            Console.WriteLine("Hello, World!");
+            Console.WriteLine("Start");
             await TelegramService.Instance.SendMessageAsync("Hello from HeyNowBot!");
             await Task.Delay(30000);
+            Console.WriteLine("Hello, World!");
         }
     }
 }
