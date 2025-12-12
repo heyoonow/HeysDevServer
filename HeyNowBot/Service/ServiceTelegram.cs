@@ -16,11 +16,11 @@ namespace HeyNowBot.Service
     {
         private const string _botToken = "8439410251:AAEnbnXVmQfzJTNg9PF8Ik8V7q7mVLnCJoo";
         private const long _chatId = 7747196424;
-        private static readonly Lazy<TelegramService> _instance =new Lazy<TelegramService>(() => new TelegramService());
+        //private static readonly Lazy<TelegramService> _instance =new Lazy<TelegramService>(() => new TelegramService());
+        //public static TelegramService Instance => _instance.Value;
         private readonly TelegramBotClient _bot;
-        public static TelegramService Instance => _instance.Value;
 
-        private TelegramService()
+        public TelegramService()
         {
             _bot = new TelegramBotClient(_botToken);
         }

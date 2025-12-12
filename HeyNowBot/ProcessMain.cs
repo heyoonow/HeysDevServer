@@ -4,21 +4,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HeyNowBot.Service;
+using Supabase.Postgrest.Models;
 
 namespace HeyNowBot
 {
     public class ProcessMain
     {
+
+        private ITelegramService? _bot;
         public ProcessMain()
         {
                
         }
         public async Task RunAsync()
         {
-            Console.WriteLine("Start");
-            await TelegramService.Instance.SendMessageAsync("Hello from HeyNowBot!");
-            await Task.Delay(30000);
-            Console.WriteLine("Hello, World!");
+            await SetLoadAsync();
+        }
+
+        private async Task SetLoadAsync()
+        {
+            _bot = new TelegramService();
+            
         }
     }
 }
