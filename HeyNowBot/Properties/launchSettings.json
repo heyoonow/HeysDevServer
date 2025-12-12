@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "HeyNowBot": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
