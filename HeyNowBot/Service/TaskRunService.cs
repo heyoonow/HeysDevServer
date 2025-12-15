@@ -27,6 +27,7 @@ namespace HeyNowBot.Service
             var visitCount = visitList?.Count ?? 0;
             var visitDuplicateCount = visitList?.GroupBy(x=>x.UserId).ToList().Count;
             var message = $"[HeyNowBot] {hour}시 오늘 방문자 수: {visitCount}명 (중복제외: {visitDuplicateCount}명)";
+            await telegram.SendMessageAsync(message);
         }
 
 
