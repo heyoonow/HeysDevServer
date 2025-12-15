@@ -32,7 +32,7 @@ namespace HeyNowBot
                 }
             };
             _timeChekerService.Start();
-            await _bot.SendMessageAsync("[HeyNowBot] 봇이 시작되었습니다.11");
+            await _bot.SendMessageAsync("[HeyNowBot] 봇이 시작되었습니다.111");
             await Task.Delay(Timeout.Infinite);
         }
 
