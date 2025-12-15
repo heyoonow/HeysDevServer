@@ -20,5 +20,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /root/app/HeysDevServer/HeyNowBot
+            cd /root/app/HeysDevServer
+            git fetch origin
+            git checkout master
+            git reset --hard origin/master
+            cd HeyNowBot
             ./deploy.sh
