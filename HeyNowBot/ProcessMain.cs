@@ -23,15 +23,16 @@ namespace HeyNowBot
         {
             await SetLoadAsync();
             _timeChekerService = new TimeChekerService();
-            await _bot.SendMessageAsync("[HeyNowBot] 봇이 시작되었습니다.15551231");
+            await _bot.SendMessageAsync("[HeyNowBot] 봇이 시작되었습니다.");
 
             _timeChekerService.OnHourReached += async (hour)  =>
             {
-                await _taskRunService.CountAlarmAsync(hour);
                 if (hour % 6 == 0)
                 {
+                    await _taskRunService.CountAlarmAsync(hour);
                     await _taskRunService.UpdateCountAsync();
                 }
+
             };
             _timeChekerService.Start();
             await Task.Delay(Timeout.Infinite);
