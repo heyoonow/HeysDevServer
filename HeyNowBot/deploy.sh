@@ -51,6 +51,8 @@ echo "--- 3. 새로운 컨테이너 실행 시작 ($CONTAINER_NAME) ---"
 # 기존과 동일하게 백그라운드 및 자동 재시작 설정
 docker run -d \
 --restart=always \
+-v /etc/localtime:/etc/localtime:ro \
+-v /etc/timezone:/etc/timezone:ro \
 --name $CONTAINER_NAME \
 $IMAGE_NAME
 
