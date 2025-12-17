@@ -32,6 +32,10 @@ namespace HeyNowBot.Service
             {
                 if (_lastTriggeredHour != currentHour)
                 {
+                    Console.WriteLine(
+    $"[TimeChecker] fire event | now={DateTime.Now:yyyy-MM-dd HH:mm:ss} | hour={DateTime.Now.Hour}"
+);
+
                     _lastTriggeredHour = currentHour;
                     OnHourReached?.Invoke(currentHour);
                 }

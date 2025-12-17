@@ -29,6 +29,9 @@ namespace HeyNowBot
             {
                 if (hour % 6 == 0)
                 {
+                    Console.WriteLine(
+        $"[Send] reportHour={hour} | sendTime={DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+    );
                     await _taskRunService.CountAlarmAsync(hour);
                     await _taskRunService.UpdateCountAsync();
                 }
