@@ -23,7 +23,7 @@ namespace HeyNowBot
         {
             await SetLoadAsync();
             _timeChekerService = new TimeChekerService();
-            await _bot.SendMessageAsync("[HeyNowBot] 봇이 시작되었습니다.");
+            await _bot.SendMessageAsync($"[HeyNowBot] 봇이 시작되었습니다. sendTime={DateTime.Now:yyyy-MM-dd HH:mm:ss}");
 
             _timeChekerService.OnHourReached += async (hour)  =>
             {
