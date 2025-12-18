@@ -27,7 +27,7 @@ namespace HeyNowBot
 
             _timeChekerService.OnHourReached += async (hour)  =>
             {
-                if (hour % 6 == 0)
+                if (hour % 3 == 0)
                 {
                     Console.WriteLine(
         $"[Send] reportHour={hour} | sendTime={DateTime.Now:yyyy-MM-dd HH:mm:ss}"
