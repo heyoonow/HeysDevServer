@@ -47,7 +47,7 @@ namespace HeyNowBot.Service
                 return null;
             }
             Console.WriteLine("[ServiceSupabase] GetTest 메서드 호출됨");
-            var dt = DateTime.Today.Date;
+            var dt = DateTime.Now.AddDays(-1);
             // 여기에 Supabase와 상호작용하는 코드 작성
             var result = await _supabaseClient.From<VisitLogModel>()
                 //.Order("created_at", ordering: Supabase.Postgrest.Constants.Ordering.Descending)
