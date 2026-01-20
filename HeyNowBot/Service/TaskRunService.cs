@@ -36,13 +36,9 @@ namespace HeyNowBot.Service
         public async Task SendStockPrice()
         {
             var stockInfo = await naverFinance.GetStockInfoAsync("360750");
-            if (stockInfo== null)
-
-            {
-                return;
-
-            }
-                var message = $"[NaverFinanceService] {stockInfo.Name}({stockInfo.Code}) - 현재가: {stockInfo.CurrentPrice}, 전일대비: {stockInfo.PreviousDayChange} ({stockInfo.ChangeRate})";
+            if (stockInfo == null) return;
+            var message = $"[NaverFinanceService] {stockInfo.Name}({stockInfo.Code}) - 현재가: {stockInfo.CurrentPrice}, 전일대비: {stockInfo.PreviousDayChange} ({stockInfo.ChangeRate})";
+            await telegram.SendMessageAsync(message);
         }
 
     }

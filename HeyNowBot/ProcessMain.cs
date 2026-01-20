@@ -41,9 +41,6 @@ namespace HeyNowBot
 
                     await _taskRunService.SendStockPrice();
                 }
-                
-
-
             };
             _timeChekerService.Start();
             await Task.Delay(Timeout.Infinite);
