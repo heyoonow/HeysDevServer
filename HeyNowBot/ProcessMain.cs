@@ -15,6 +15,7 @@ namespace HeyNowBot
         private IServiceSupabase _supabase;
         private TaskRunService _taskRunService;
         private TimeChekerService _timeChekerService;
+        private NaverFinanceService _naverFinanceService;
         public ProcessMain()
         {
                
@@ -25,16 +26,23 @@ namespace HeyNowBot
             _timeChekerService = new TimeChekerService();
             await _bot.SendMessageAsync($"{DateTime.Now:yyyy-MM-dd HH:mm:ss}[HeyNowBot] 봇이 시작되었습니다. ");
 
-            _timeChekerService.OnHourReached += async (hour)  =>
+            _timeChekerService.OnHourReached += async (hour, minute)  =>
             {
-                if (hour % 3 == 0)
+                if (hour % 3 == 0 && minute == 0)
                 {
                     Console.WriteLine(
         $"[Send] reportHour={hour} | sendTime={DateTime.Now:yyyy-MM-dd HH:mm:ss}"
     );
                     await _taskRunService.CountAlarmAsync(hour);
-                    await _taskRunService.UpdateCountAsync();
                 }
+
+                if (hour <= 9 && hour <= 15 && minute == 30)
+                {
+
+                    await _taskRunService.SendStockPrice();
+                }
+                
+
 
             };
             _timeChekerService.Start();
@@ -45,7 +53,9 @@ namespace HeyNowBot
         {
             _bot = new TelegramService();
             _supabase = new ServiceSupabase();
-            _taskRunService = new TaskRunService(telegram: _bot, supabase: _supabase);
+
+            _naverFinanceService = new NaverFinanceService();
+            _taskRunService = new TaskRunService(telegram: _bot, supabase: _supabase, naverFinance:_naverFinanceService);
         }
     }
 }

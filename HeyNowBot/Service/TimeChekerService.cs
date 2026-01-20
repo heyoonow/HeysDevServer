@@ -10,8 +10,9 @@ namespace HeyNowBot.Service
     {
         private Timer _timer;
         private int _lastTriggeredHour = -1;
+        private int _lastTriggeredMinute = -1;
         
-        public event Action<int> OnHourReached;
+        public event Action<int, int> OnHourReached;
 
         public void Start()
         {
@@ -27,22 +28,25 @@ namespace HeyNowBot.Service
         {
             var now = DateTime.Now;
             int currentHour = now.Hour;
+            int currentMinute = now.Minute;
 
-            if (now.Minute == 0 && now.Second < 1)
+            if (currentMinute % 30 == 0 && now.Second < 1)
             {
-                if (_lastTriggeredHour != currentHour)
+                if (_lastTriggeredHour != currentHour || _lastTriggeredMinute != currentMinute)
                 {
                     Console.WriteLine(
-    $"[TimeChecker] fire event | now={DateTime.Now:yyyy-MM-dd HH:mm:ss} | hour={DateTime.Now.Hour}"
+    $"[TimeChecker] fire event | now={DateTime.Now:yyyy-MM-dd HH:mm:ss} | hour={currentHour} | minute={currentMinute}"
 );
 
                     _lastTriggeredHour = currentHour;
-                    OnHourReached?.Invoke(currentHour);
+                    _lastTriggeredMinute = currentMinute;
+                    OnHourReached?.Invoke(currentHour, currentMinute);
                 }
             }
-            else if (now.Minute > 0)
+            else if (currentMinute % 30 != 0)
             {
                 _lastTriggeredHour = -1;
+                _lastTriggeredMinute = -1;
             }
         }
     }
