@@ -28,11 +28,10 @@ namespace HeyNowBot
 
             _timeChekerService.OnHourReached += async (hour, minute)  =>
             {
+                Console.WriteLine($"receive :{hour}:{minute}");
                 if (hour % 3 == 0 && minute == 0)
                 {
-                    Console.WriteLine(
-        $"[Send] reportHour={hour} | sendTime={DateTime.Now:yyyy-MM-dd HH:mm:ss}"
-    );
+
                     await _taskRunService.CountAlarmAsync(hour);
                 }
 

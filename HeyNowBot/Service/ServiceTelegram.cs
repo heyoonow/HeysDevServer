@@ -29,10 +29,9 @@ namespace HeyNowBot.Service
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-#if DEBUG
             Console.WriteLine($"[TelegramService] 전송 메시지: {text}");
             
-#endif
+
             try
             {
                 await _bot.SendMessage(
@@ -42,7 +41,6 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TelegramService] 전송 오류: {ex.Message}");
             }
         }
     }

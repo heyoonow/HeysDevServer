@@ -35,7 +35,6 @@ namespace HeyNowBot.Service
             _supabaseClient = new Supabase.Client(_url, _anonKey, options);
             await _supabaseClient.InitializeAsync();
             _isInitialized = true;
-            Console.WriteLine("[ServiceSupabase] Supabase 클라이언트 초기화 완료");
         }
 
         public async Task<List<VisitLogModel>?> GetVisitListAsync()
@@ -46,7 +45,6 @@ namespace HeyNowBot.Service
                 await GetVisitListAsync();
                 return null;
             }
-            Console.WriteLine("[ServiceSupabase] GetTest 메서드 호출됨");
             var dt = DateTime.Now.AddDays(-1);
             // 여기에 Supabase와 상호작용하는 코드 작성
             var result = await _supabaseClient.From<VisitLogModel>()
@@ -75,7 +73,6 @@ namespace HeyNowBot.Service
             var list = result.Models.ToList();
             if(list.Count == 0)
             {
-                Console.WriteLine($"[ServiceSupabase:{DateTime.Now.ToString()}] 업데이트할 방문자 로그가 없습니다.");
                 return;
             }
             foreach (var item in list)

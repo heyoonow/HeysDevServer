@@ -42,17 +42,14 @@ namespace HeyNowBot.Service
                 
                 if (realtimeNode != null && realtimeNode.InnerText.Trim().Contains("실시간"))
                 {
-                    Console.WriteLine($"[NaverFinanceService] 실시간 장중입니다.");
                     return true;
                 }
                 
-                Console.WriteLine($"[NaverFinanceService] 장이 열려있지 않습니다.");
                 
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[NaverFinanceService] 장 상태 확인 오류: {ex.Message}");
                 return false;
             }
         }
