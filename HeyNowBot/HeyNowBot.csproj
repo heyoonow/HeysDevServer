@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <PreBuildEvent>taskkill /f /im HeyNowBot.exe 2&gt;nul || exit 0</PreBuildEvent>
   </PropertyGroup>
 
   <ItemGroup>

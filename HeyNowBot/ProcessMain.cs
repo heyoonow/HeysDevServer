@@ -36,7 +36,7 @@ namespace HeyNowBot
                     await _taskRunService.CountAlarmAsync(hour);
                 }
 
-                if (hour <= 9 && hour <= 15 )
+                if (hour >= 9 && hour <= 15 )
                 {
 
                     await _taskRunService.SendStockPrice();

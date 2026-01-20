@@ -29,6 +29,10 @@ namespace HeyNowBot.Service
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
+#if DEBUG
+            Console.WriteLine($"[TelegramService] 전송 메시지: {text}");
+            return;
+#endif
             try
             {
                 await _bot.SendMessage(
