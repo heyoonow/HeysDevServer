@@ -10,16 +10,19 @@ namespace HeyNowBot
 {
     public class ProcessMain
     {
-
         private ITelegramService _bot;
         private IServiceSupabase _supabase;
         private TaskRunService _taskRunService;
         private TimeChekerService _timeChekerService;
         private NaverFinanceService _naverFinanceService;
+        
+        // _rssUrls 및 _rssService 필드 제거 (TaskRunService로 이관됨)
+
         public ProcessMain()
         {
                
         }
+        
         public async Task RunAsync()
         {
             await SetLoadAsync();
@@ -31,7 +34,6 @@ namespace HeyNowBot
             {
                 Console.WriteLine($"[ProcessMain] Hour Reached :{hour}:{minute}");
                 
-                // 3시간마다 알림 (0, 3, 6, 9...시)
                 if (hour % 3 == 0)
                 {
                     await _taskRunService.CountAlarmAsync(hour);
@@ -43,23 +45,24 @@ namespace HeyNowBot
             {
                 Console.WriteLine($"[ProcessMain] 30Min Reached :{hour}:{minute}");
 
-                // 주식 장 운영 시간 (09:00 ~ 15:59) 동안 주가 전송
                 if (hour >= 9 && hour <= 15)
                 {
                     await _taskRunService.SendStockPrice();
                 }
             };
 
-            // 3. 매 10분 간격 실행 (추후 필요 시 로직 추가)
+            // 3. 매 10분 간격 실행: RSS 체크 (비즈니스 로직 위임)
             _timeChekerService.On10MinReached += async (hour, minute) =>
             {
-                Console.WriteLine($"[ProcessMain] 10Min Reached :{hour}:{minute}");
+                await _taskRunService.CheckRssNewsAsync();
+
             };
 
-            // 4. 매 1분 간격 실행 (디버깅 및 정밀 체크용)
+            // 4. 매 1분 간격 실행
             _timeChekerService.On1MinReached += async (hour, minute) => 
             {
-                // Console.WriteLine($"[ProcessMain] 1Min Reached :{hour}:{minute}");
+
+                // 필요 시 추가
             };
 
             _timeChekerService.Start();
@@ -72,9 +75,13 @@ namespace HeyNowBot
             _supabase = new ServiceSupabase();
 
             _naverFinanceService = new NaverFinanceService();
-            _taskRunService = new TaskRunService(telegram: _bot, supabase: _supabase, naverFinance:_naverFinanceService);
+            var rssService = new RssService(); // 로컬 생성 후 주입
+            
+            // TaskRunService 생성자에 rssService 전달
+            _taskRunService = new TaskRunService(telegram: _bot, supabase: _supabase, naverFinance:_naverFinanceService, rssService: rssService);
 
-            //await _taskRunService.SendStockPrice();
+            // RSS 서비스 초기화 호출
+            await _taskRunService.InitializeRssAsync();
         }
     }
 }
