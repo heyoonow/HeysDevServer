@@ -38,6 +38,13 @@ namespace HeyNowBot
                 {
                     await _taskRunService.CountAlarmAsync(hour);
                 }
+
+                if (hour >= 9 && hour <= 15)
+                {
+                    await _taskRunService.SendStockPrice();
+                }
+
+                await _taskRunService.CheckRssNewsAsync();
             };
 
             // 2. 매 30분 간격 실행 (0분, 30분)
@@ -45,16 +52,13 @@ namespace HeyNowBot
             {
                 Console.WriteLine($"[ProcessMain] 30Min Reached :{hour}:{minute}");
 
-                if (hour >= 9 && hour <= 15)
-                {
-                    await _taskRunService.SendStockPrice();
-                }
+                
+
             };
 
             // 3. 매 10분 간격 실행: RSS 체크 (비즈니스 로직 위임)
             _timeChekerService.On10MinReached += async (hour, minute) =>
             {
-                await _taskRunService.CheckRssNewsAsync();
 
             };
 
