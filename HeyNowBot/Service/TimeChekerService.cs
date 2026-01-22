@@ -9,55 +9,43 @@ namespace HeyNowBot.Service
     public class TimeChekerService
     {
         private Timer _timer;
+        private int _lastTriggeredHour = -1;
+        private int _lastTriggeredMinute = -1;
         
         public event Action<int, int> OnHourReached;
 
         public void Start()
         {
-            ScheduleNextTrigger();
+            // 30초마다 체크 (30,000ms = 30초)
+            // 이렇게 하면 0분과 30분을 확실히 잡을 수 있음
+            _timer = new Timer(CheckTime, null, 0, 30000);
+            
+            Console.WriteLine("[TimeChekerService] 타이머 시작 (30초 간격)");
         }
 
         public void Stop()
         {
             _timer?.Dispose();
+            Console.WriteLine("[TimeChekerService] 타이머 중지");
         }
 
-        private void ScheduleNextTrigger()
-        {
-            var now = DateTime.Now;
-            var next = GetNextTriggerTime(now);
-            var delay = (next - now).TotalMilliseconds;
-
-
-            _timer?.Dispose();
-            _timer = new Timer(OnTimerFired, null, (int)delay, Timeout.Infinite);
-        }
-
-        private DateTime GetNextTriggerTime(DateTime current)
-        {
-            var minute = current.Minute;
-            var nextMinute = minute < 30 ? 30 : 60;
-            
-            var next = new DateTime(current.Year, current.Month, current.Day, current.Hour, 0, 0);
-            
-            if (nextMinute == 60)
-            {
-                next = next.AddHours(1);
-            }
-            else
-            {
-                next = next.AddMinutes(30);
-            }
-
-            return next;
-        }
-
-        private void OnTimerFired(object state)
+        private void CheckTime(object state)
         {
             var now = DateTime.Now;
             
-            // 다음 타이머를 먼저 예약하여 이벤트 실행 시간에 영향받지 않도록 함
-            ScheduleNextTrigger();
+            // 0분 또는 30분인지 체크
+            if (now.Minute != 0 && now.Minute != 30)
+                return;
+
+            // 이미 트리거했는지 체크
+            if (_lastTriggeredHour == now.Hour && _lastTriggeredMinute == now.Minute)
+                return;
+
+            // 트리거
+            _lastTriggeredHour = now.Hour;
+            _lastTriggeredMinute = now.Minute;
+            
+            Console.WriteLine($"[TimeChecker] fire event | now={now:yyyy-MM-dd HH:mm:ss} | hour={now.Hour} | minute={now.Minute}");
             
             // 이벤트를 별도 Task로 실행
             Task.Run(() => OnHourReached?.Invoke(now.Hour, now.Minute));
