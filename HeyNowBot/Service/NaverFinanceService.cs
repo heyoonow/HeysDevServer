@@ -24,21 +24,19 @@ namespace HeyNowBot.Service
 
         public NaverFinanceService()
         {
-            // 리눅스 서버에서 EUC-KR(949) 인코딩을 사용하기 위한 필수 설정
+            // [필수] 리눅스 서버에서 EUC-KR(CP949) 인코딩을 인식하기 위한 설정
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             _httpClient = new HttpClient();
-            // 네이버 차단을 피하기 위해 헤더를 실제 브라우저와 유사하게 설정
+            // 실제 브라우저와 유사한 헤더 설정 (차단 방지)
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             _httpClient.DefaultRequestHeaders.Add("Referer", "https://finance.naver.com/");
             _httpClient.DefaultRequestHeaders.Add("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7");
         }
 
-        /// <summary>
-        /// 네이버 금융 페이지에서 HTML을 가져와 EUC-KR로 디코딩합니다.
-        /// </summary>
         private async Task<string> GetHtmlWithEucKrAsync(string url)
         {
+            // GetStringAsync 대신 바이트 배열로 받아 직접 디코딩 (한글 깨짐 해결 핵심)
             var bytes = await _httpClient.GetByteArrayAsync(url);
             return Encoding.GetEncoding("euc-kr").GetString(bytes);
         }
@@ -55,25 +53,13 @@ namespace HeyNowBot.Service
 
                 var realtimeNode = htmlDoc.DocumentNode.SelectSingleNode("//em[@class='realtime']");
 
-                // "실시간" 글자가 포함되어 있거나 특정 노드가 존재하면 장 중으로 판단
-                if (realtimeNode != null && realtimeNode.InnerText.Trim().Contains("실시간"))
-                {
-                    return true;
-                }
-
-                return false;
+                return realtimeNode != null && realtimeNode.InnerText.Contains("실시간");
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[IsMarketOpenAsync] 오류: {ex.Message}");
-                return false;
-            }
+            catch { return false; }
         }
 
         public async Task<StockInfo> GetStockInfoAsync(string stockCode)
         {
-            // 장 오픈 여부 확인 시에도 인코딩 수정 버전 사용
-            // (서버 IP 차단 여부를 먼저 확인하기 위해 로그 추가 권장)
             try
             {
                 var url = $"https://finance.naver.com/item/main.naver?code={stockCode}";
@@ -88,26 +74,30 @@ namespace HeyNowBot.Service
                     UpdateTime = DateTime.Now
                 };
 
-                // 종목명
+                // 1. 종목명 (특수문자 및 한글 깨짐 방지 DeEntitize)
                 var nameNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='wrap_company']//h2/a");
                 if (nameNode != null)
                 {
-                    stockInfo.Name = nameNode.InnerText.Trim();
+                    stockInfo.Name = HtmlEntity.DeEntitize(nameNode.InnerText.Trim());
                 }
 
-                // 현재가
+                // 2. 현재가
                 var priceNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='today']//p[@class='no_today']/em/span[@class='blind']");
                 if (priceNode != null)
                 {
                     stockInfo.CurrentPrice = priceNode.InnerText.Trim();
                 }
 
-                // 전일대비 및 등락률
+                // 3. 전일대비 및 등락률 파싱 (서버 환경에서도 안전한 판별 로직)
                 var noExdayNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='today']//p[@class='no_exday']");
                 if (noExdayNode != null)
                 {
-                    var isUp = noExdayNode.SelectSingleNode(".//em[contains(@class, 'ico_up')]") != null;
-                    var isDown = noExdayNode.SelectSingleNode(".//em[contains(@class, 'ico_down')]") != null;
+                    // em 태그의 class에 'up' 또는 'down'이 포함되어 있는지 검사 (가장 확실함)
+                    var statusNode = noExdayNode.SelectSingleNode(".//em");
+                    string classAttr = statusNode?.GetAttributeValue("class", "") ?? "";
+
+                    bool isUp = classAttr.Contains("up");
+                    bool isDown = classAttr.Contains("down");
 
                     var blindNodes = noExdayNode.SelectNodes(".//span[@class='blind']");
                     if (blindNodes != null && blindNodes.Count >= 2)
@@ -122,13 +112,13 @@ namespace HeyNowBot.Service
                         }
                         else if (isUp)
                         {
-                            stockInfo.PreviousDayChange = changeValue.StartsWith("+") ? changeValue : $"+{changeValue}";
-                            stockInfo.ChangeRate = changeRateValue.StartsWith("+") ? changeRateValue : $"+{changeRateValue}";
+                            stockInfo.PreviousDayChange = $"+{changeValue}";
+                            stockInfo.ChangeRate = $"+{changeRateValue}";
                         }
                         else
                         {
-                            stockInfo.PreviousDayChange = changeValue == "0" ? "0 (보합)" : changeValue;
-                            stockInfo.ChangeRate = changeRateValue == "0.00%" ? "0.00%" : changeRateValue;
+                            stockInfo.PreviousDayChange = "0";
+                            stockInfo.ChangeRate = "0.00%";
                         }
                     }
                 }
@@ -137,14 +127,13 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[GetStockInfoAsync] 코드 {stockCode} 처리 중 오류: {ex.Message}");
+                Console.WriteLine($"[NaverFinanceService] {stockCode} 오류: {ex.Message}");
                 return null;
             }
         }
 
         public async Task<List<StockInfo>> GetMultipleStockInfoAsync(params string[] stockCodes)
         {
-            // 병렬 처리 시에도 동일한 HttpClient를 사용하여 효율성 유지
             var tasks = stockCodes.Select(code => GetStockInfoAsync(code));
             var results = await Task.WhenAll(tasks);
             return results.Where(r => r != null).ToList();
