@@ -52,6 +52,8 @@ namespace HeyNowBot
 
             _naverFinanceService = new NaverFinanceService();
             _taskRunService = new TaskRunService(telegram: _bot, supabase: _supabase, naverFinance:_naverFinanceService);
+
+            //await _taskRunService.SendStockPrice();
         }
     }
 }
