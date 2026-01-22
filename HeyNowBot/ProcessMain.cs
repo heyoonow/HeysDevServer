@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using HeyNowBot.Service;
-using Supabase.Postgrest.Models;
 
 namespace HeyNowBot
 {
@@ -12,61 +11,76 @@ namespace HeyNowBot
     {
         private ITelegramService _bot;
         private IServiceSupabase _supabase;
-        private TaskRunService _taskRunService;
+        private ITaskRunService _taskRunService;
         private TimeChekerService _timeChekerService;
         private NaverFinanceService _naverFinanceService;
-        
-        // _rssUrls 및 _rssService 필드 제거 (TaskRunService로 이관됨)
 
-        public ProcessMain()
-        {
-               
-        }
-        
         public async Task RunAsync()
         {
             await SetLoadAsync();
             _timeChekerService = new TimeChekerService();
-            await _bot.SendMessageAsync($"{DateTime.Now:yyyy-MM-dd HH:mm:ss}[HeyNowBot] 봇이 시작되었습니다. ");
 
-            // 1. 매 시간 정각 실행
-            _timeChekerService.OnHourReached += async (hour, minute)  =>
+            await _bot.SendMessageAsync($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [HeyNowBot] 봇이 시작되었습니다.");
+
+            _timeChekerService.OnHourReached += async (hour, minute) =>
             {
-                Console.WriteLine($"[ProcessMain] Hour Reached :{hour}:{minute}");
-                
+                var now = DateTime.Now;
+                var sb = new StringBuilder();
+
+                // Header (항상 포함)
+                sb.AppendLine($"🕒 {now:yyyy-MM-dd HH:mm}  |  [HeyNowBot] 정각 리포트");
+                sb.AppendLine($"- 현재 시간: {hour:00}:{minute:00}");
+                sb.AppendLine("--------------------");
+
+                var hasBody = false;
+
+                // 방문자 (3시간마다)
                 if (hour % 3 == 0)
                 {
-                    await _taskRunService.CountAlarmAsync(hour);
+                    var msg = await _taskRunService.GetCountAlarmMessageAsync(hour);
+                    if (!string.IsNullOrWhiteSpace(msg))
+                    {
+                        hasBody = true;
+                        sb.AppendLine("👥 방문자");
+                        sb.AppendLine(msg);
+                        sb.AppendLine("--------------------");
+                    }
                 }
 
+                // 주가 (장 시간)
                 if (hour >= 9 && hour <= 15)
                 {
-                    await _taskRunService.SendStockPrice();
+                    var msg = await _taskRunService.GetStockPriceMessageAsync();
+                    if (!string.IsNullOrWhiteSpace(msg))
+                    {
+                        hasBody = true;
+                        sb.AppendLine("📈 주가");
+                        sb.AppendLine(msg);
+                        sb.AppendLine("--------------------");
+                    }
                 }
 
-                await _taskRunService.CheckRssNewsAsync();
-            };
+                // RSS
+                var rssMsg = await _taskRunService.GetRssNewsMessageAsync(isDebug: false);
+                if (!string.IsNullOrWhiteSpace(rssMsg))
+                {
+                    hasBody = true;
+                    sb.AppendLine("📰 RSS");
+                    sb.AppendLine(rssMsg);
+                    sb.AppendLine("--------------------");
+                }
 
-            // 2. 매 30분 간격 실행 (0분, 30분)
-            _timeChekerService.On30MinReached += async (hour, minute) =>
-            {
-                Console.WriteLine($"[ProcessMain] 30Min Reached :{hour}:{minute}");
+                // 바디가 하나도 없으면 안내 문구
+                if (!hasBody)
+                {
+                    sb.AppendLine("✅ 업데이트 없음");
+                    sb.AppendLine("이번 정각에는 전달할 신규 정보가 없습니다.");
+                    sb.AppendLine("--------------------");
+                }
 
-                
+                sb.AppendLine("끝.");
 
-            };
-
-            // 3. 매 10분 간격 실행: RSS 체크 (비즈니스 로직 위임)
-            _timeChekerService.On10MinReached += async (hour, minute) =>
-            {
-
-            };
-
-            // 4. 매 1분 간격 실행
-            _timeChekerService.On1MinReached += async (hour, minute) => 
-            {
-
-                // 필요 시 추가
+                await _bot.SendMessageAsync(sb.ToString().Trim());
             };
 
             _timeChekerService.Start();
@@ -79,12 +93,14 @@ namespace HeyNowBot
             _supabase = new ServiceSupabase();
 
             _naverFinanceService = new NaverFinanceService();
-            var rssService = new RssService(); // 로컬 생성 후 주입
-            
-            // TaskRunService 생성자에 rssService 전달
-            _taskRunService = new TaskRunService(telegram: _bot, supabase: _supabase, naverFinance:_naverFinanceService, rssService: rssService);
+            var rssService = new RssService();
 
-            // RSS 서비스 초기화 호출
+            _taskRunService = new TaskRunService(
+                supabase: _supabase,
+                naverFinance: _naverFinanceService,
+                rssService: rssService
+            );
+
             await _taskRunService.InitializeRssAsync();
         }
     }
