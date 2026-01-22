@@ -24,6 +24,7 @@ namespace HeyNowBot.Service
         {
             "https://bbs.ruliweb.com/ps/board/300001/rss",
             "https://bbs.ruliweb.com/mobile/board/300008/rss",
+            "https://bbs.ruliweb.com/market/board/1020/rss",
         };
 
         public TaskRunService(IServiceSupabase supabase, NaverFinanceService naverFinance, RssService rssService)
