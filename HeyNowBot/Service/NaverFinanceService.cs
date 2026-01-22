@@ -34,11 +34,35 @@ namespace HeyNowBot.Service
             _httpClient.DefaultRequestHeaders.Add("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7");
         }
 
-        private async Task<string> GetHtmlWithEucKrAsync(string url)
+        /// <summary>
+        /// 네이버 금융 페이지 HTML 가져오기 (헤더/메타태그 기반 인코딩 자동 감지)
+        /// </summary>
+        private async Task<string> GetHtmlAsync(string url)
         {
-            // GetStringAsync 대신 바이트 배열로 받아 직접 디코딩 (한글 깨짐 해결 핵심)
-            var bytes = await _httpClient.GetByteArrayAsync(url);
-            return Encoding.GetEncoding("euc-kr").GetString(bytes);
+            using var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+
+            // 1. 헤더에서 인코딩 확인 (가장 정확함)
+            var charSet = response.Content.Headers.ContentType?.CharSet;
+            if (!string.IsNullOrEmpty(charSet))
+            {
+                try
+                {
+                    return Encoding.GetEncoding(charSet).GetString(bytes);
+                }
+                catch { }
+            }
+
+            // 2. 인코딩 감지 (기본값 EUC-KR, 메타태그/BOM에 따라 자동 변경)
+            var doc = new HtmlDocument();
+            using (var ms = new System.IO.MemoryStream(bytes))
+            {
+                // 기본 인코딩을 EUC-KR로 설정하되, detectEncoding=true로 BOM/Meta 태그 확인
+                doc.Load(ms, Encoding.GetEncoding("euc-kr"), true);
+                return doc.Encoding.GetString(bytes);
+            }
         }
 
         public async Task<bool> IsMarketOpenAsync(string stockCode = "005930")
@@ -46,7 +70,7 @@ namespace HeyNowBot.Service
             try
             {
                 var url = $"https://finance.naver.com/item/main.naver?code={stockCode}";
-                var html = await GetHtmlWithEucKrAsync(url);
+                var html = await GetHtmlAsync(url); // 인코딩 자동 감지 메서드로 변경
 
                 var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(html);
@@ -63,7 +87,7 @@ namespace HeyNowBot.Service
             try
             {
                 var url = $"https://finance.naver.com/item/main.naver?code={stockCode}";
-                var html = await GetHtmlWithEucKrAsync(url);
+                var html = await GetHtmlAsync(url); // 인코딩 자동 감지 메서드로 변경
 
                 var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(html);
@@ -83,7 +107,7 @@ namespace HeyNowBot.Service
 
                 // 2. 현재가
                 var priceNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='today']//p[@class='no_today']/em/span[@class='blind']");
-                if (priceNode != null)
+                if (priceNode != null)          
                 {
                     stockInfo.CurrentPrice = priceNode.InnerText.Trim();
                 }
