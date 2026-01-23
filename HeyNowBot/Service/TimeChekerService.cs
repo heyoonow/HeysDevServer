@@ -7,8 +7,6 @@ namespace HeyNowBot.Service
     public class TimeChekerService
     {
         private Timer _timer;
-        private int _lastTriggeredHour = -1;
-        private int _lastTriggeredMinute = -1;
 
         public event Func<int, int, Task> OnHourReached;
         public event Func<int, int, Task> On30MinReached;
@@ -17,8 +15,13 @@ namespace HeyNowBot.Service
 
         public void Start()
         {
-            _timer = new Timer(CheckTime, null, 0, 10000);
-            Console.WriteLine("[TimeChekerService] 타이머 시작 (10초 간격)");
+            // 다음 "분"의 0초에 맞춰 얼라인 (예: 09:10:00)
+            var now = DateTime.Now;
+            var nextMinute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0).AddMinutes(1);
+            var dueTimeMs = (int)Math.Max(0, (nextMinute - now).TotalMilliseconds);
+
+            _timer = new Timer(CheckTime, null, dueTimeMs, 60000); // 이후 1분마다
+            Console.WriteLine($"[TimeChekerService] 타이머 시작 (다음 분 정각까지 {dueTimeMs}ms, 이후 1분 간격)");
         }
 
         public void Stop()
@@ -30,15 +33,6 @@ namespace HeyNowBot.Service
         private void CheckTime(object state)
         {
             var now = DateTime.Now;
-
-            if (_lastTriggeredHour == now.Hour && _lastTriggeredMinute == now.Minute)
-                return;
-
-            _lastTriggeredHour = now.Hour;
-            _lastTriggeredMinute = now.Minute;
-
-            Console.WriteLine($"[TimeChecker] Tick | now={now:yyyy-MM-dd HH:mm:ss}");
-
             _ = FireAsync(now);
         }
 
