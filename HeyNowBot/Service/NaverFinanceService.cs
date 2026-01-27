@@ -67,19 +67,38 @@ namespace HeyNowBot.Service
 
         public async Task<bool> IsMarketOpenAsync(string stockCode = "005930")
         {
+            // 주말은 무조건 휴장
+            var now = DateTime.Now;
+            if (now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                return false;
+
+            // 기본 장 시간 가드 (09:00 ~ 15:30)
+            // - 15시 이후는 15:30까지만 허용
+            if (now.Hour < 9)
+                return false;
+            if (now.Hour > 15)
+                return false;
+            if (now.Hour == 15 && now.Minute > 30)
+                return false;
+
             try
             {
                 var url = $"https://finance.naver.com/item/main.naver?code={stockCode}";
-                var html = await GetHtmlAsync(url); // 인코딩 자동 감지 메서드로 변경
+                var html = await GetHtmlAsync(url);
 
                 var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(html);
 
                 var realtimeNode = htmlDoc.DocumentNode.SelectSingleNode("//em[@class='realtime']");
 
+                // "실시간"이 있어도 휴장/마감 화면에서 오탐될 수 있어
+                // 위의 주말/시간 가드가 1차 방어선
                 return realtimeNode != null && realtimeNode.InnerText.Contains("실시간");
             }
-            catch { return false; }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<StockInfo> GetStockInfoAsync(string stockCode)
