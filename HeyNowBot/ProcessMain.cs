@@ -37,20 +37,12 @@ namespace HeyNowBot
                     var msg = await _taskRunService.GetCountAlarmMessageAsync(hour);
                     if (!string.IsNullOrWhiteSpace(msg))
                         parts.Add(msg);
-                }       
+                }
 
                 // RSS
                 var rssMsg = await _taskRunService.GetRssNewsMessageAsync(isDebug: false);
                 if (!string.IsNullOrWhiteSpace(rssMsg))
                     parts.Add(rssMsg);
-
-                // 11:00~15:00 정각 주가(1시간 간격) - 주말은 무조건 스킵
-                if (hour >= 11 && hour <= 15 && !IsWeekend(DateTime.Now))
-                {
-                    var msg = await _taskRunService.GetStockPriceMessageAsync();
-                    if (!string.IsNullOrWhiteSpace(msg))
-                        parts.Add(msg);
-                }
 
                 if (parts.Count == 0)
                     return;
@@ -59,10 +51,14 @@ namespace HeyNowBot
                 ScheduleFlush();
             };
 
+            // 주식 알림: 11시 이전(09:00~10:59) = 10분 간격 (주말 스킵)
             _timeChekerService.On10MinReached += async (hour, minute) =>
             {
-                // 09:00~09:59 10분 간격, 주말 스킵
-                if (hour != 9 || IsWeekend(DateTime.Now))
+                if (IsWeekend(DateTime.Now))
+                    return;
+
+                // 09~10시대만 10분 간격
+                if (hour < 9 || hour >= 11)
                     return;
 
                 var msg = await _taskRunService.GetStockPriceMessageAsync();
@@ -70,13 +66,23 @@ namespace HeyNowBot
                     return;
 
                 QueueMessage(msg);
-                ScheduleFlush();    
+                ScheduleFlush();
             };
 
+            // 주식 알림: 11시 이후(11:00~15:30) = 30분 간격 (주말 스킵)
             _timeChekerService.On30MinReached += async (hour, minute) =>
             {
-                // 10:00~10:59 30분 간격, 주말 스킵
-                if (hour != 10 || IsWeekend(DateTime.Now))
+                if (IsWeekend(DateTime.Now))
+                    return;
+
+                // 11:00 ~ 15:30만 허용
+                if (hour < 11)
+                    return;
+
+                if (hour > 15)
+                    return;
+
+                if (hour == 15 && minute > 30)
                     return;
 
                 var msg = await _taskRunService.GetStockPriceMessageAsync();
@@ -114,7 +120,6 @@ namespace HeyNowBot
                 cts = _flushCts;
             }
 
-            // 짧게 디바운스 후(동일 분 여러 트리거 합산) 1회 전송
             _ = Task.Run(async () =>
             {
                 try
@@ -124,7 +129,6 @@ namespace HeyNowBot
                 }
                 catch (OperationCanceledException)
                 {
-                    // 다음 트리거가 와서 취소됨 (정상)
                 }
             });
         }
@@ -142,7 +146,6 @@ namespace HeyNowBot
                 _pendingMessages.Clear();
             }
 
-            // 같은 텍스트 중복 제거(겹치면 보기 안 좋으니)
             var text = string.Join("\n\n", new HashSet<string>(batch)).Trim();
             if (!string.IsNullOrWhiteSpace(text))
                 await _bot.SendMessageAsync(text);
