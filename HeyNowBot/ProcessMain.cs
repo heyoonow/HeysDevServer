@@ -38,7 +38,7 @@ namespace HeyNowBot
                     if (!string.IsNullOrWhiteSpace(msg))
                         parts.Add(msg);
                 }
-
+            
                 // RSS
                 var rssMsg = await _taskRunService.GetRssNewsMessageAsync(isDebug: false);
                 if (!string.IsNullOrWhiteSpace(rssMsg))
@@ -96,7 +96,7 @@ namespace HeyNowBot
             _timeChekerService.Start();
             await Task.Delay(Timeout.Infinite);
         }
-
+        
         private static bool IsWeekend(DateTime now)
             => now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
@@ -150,7 +150,7 @@ namespace HeyNowBot
             if (!string.IsNullOrWhiteSpace(text))
                 await _bot.SendMessageAsync(text);
         }
-
+        
         private async Task SetLoadAsync()
         {
             _bot = new TelegramService();
