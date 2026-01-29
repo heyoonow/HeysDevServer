@@ -13,6 +13,7 @@ namespace HeyNowBot.Service
         public string Title { get; set; }
         public string Link { get; set; }
         public DateTime PubDate { get; set; }
+        public string Category { get; set; }
     }
 
     public class RssService
@@ -36,7 +37,7 @@ namespace HeyNowBot.Service
                     Console.WriteLine($"[RssService] 요청 실패: {rssUrl} ({response.StatusCode})");
                     return new List<RssItem>();
                 }
-                
+
                 using var stream = await response.Content.ReadAsStreamAsync();
                 var xdoc = XDocument.Load(stream);
 
@@ -45,7 +46,8 @@ namespace HeyNowBot.Service
                     {
                         Title = item.Element("title")?.Value.Trim(),
                         Link = item.Element("link")?.Value.Trim(),
-                        PubDate = ParseDate(item.Element("pubDate")?.Value)
+                        PubDate = ParseDate(item.Element("pubDate")?.Value),
+                        Category = ParseCategory(item)
                     })
                     .Where(x => x.PubDate != DateTime.MinValue)
                     .OrderByDescending(x => x.PubDate)
@@ -90,19 +92,28 @@ namespace HeyNowBot.Service
             }
         }
 
+        private static string ParseCategory(XElement itemElement)
+        {
+            // RSS에 category가 여러 개면 모두 합침
+            var categories = itemElement.Elements("category")
+                .Select(x => x.Value?.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            return categories.Count == 0 ? "" : string.Join(", ", categories);
+        }
+
         private DateTime ParseDate(string dateStr)
         {
             if (string.IsNullOrWhiteSpace(dateStr)) return DateTime.MinValue;
 
             if (DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
-            {
                 return result;
-            }
-            
+
             if (DateTime.TryParse(dateStr, out var resultLocal))
-            {
                 return resultLocal;
-            }
+
             return DateTime.MinValue;
         }
     }

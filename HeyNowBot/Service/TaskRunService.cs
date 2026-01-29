@@ -57,7 +57,7 @@ namespace HeyNowBot.Service
         public async Task InitializeRssAsync()
         {
             Console.WriteLine("[TaskRunService] RSS 초기화 중...");
-            foreach (var url in _rssUrls)       
+            foreach (var url in _rssUrls)
             {
                 await rssService.GetNewFeedsAsync(url, isDebug: false);
             }
@@ -67,37 +67,48 @@ namespace HeyNowBot.Service
         {
             Console.WriteLine($"[TaskRunService] RSS 체크 시작 (Debug: {isDebug})");
 
-            var sb = new StringBuilder();
-            var hasAny = false;
+            // 텔레그램 메시지 길이 방어(여유분 포함)
+            const int maxMessageLength = 3500;
+
+            var allNewItems = new List<RssItem>();
 
             foreach (var url in _rssUrls)
             {
-                // FIX: isDebug 고정(true) 버그 제거
                 var newItems = await rssService.GetNewFeedsAsync(url, isDebug);
 
                 if (newItems == null || newItems.Count == 0)
                     continue;
 
-                hasAny = true;
-
-                var prefix = isDebug ? "[DEBUG] " : "";
-                sb.AppendLine($"{prefix}📰 [RSS 업데이트]");
-                sb.AppendLine($"Source: {url}");
-
-                foreach (var item in newItems)
-                {
-                    sb.AppendLine();
-                    sb.AppendLine($"제목: {item.Title}");
-                    sb.AppendLine($"일시: {item.PubDate:MM-dd HH:mm}");
-                    sb.AppendLine($"링크: {item.Link}");
-                }
-
-                sb.AppendLine();
-                sb.AppendLine("----");
-                sb.AppendLine();
+                allNewItems.AddRange(newItems);
             }
 
-            return hasAny ? sb.ToString().Trim() : null;
+            if (allNewItems.Count == 0)
+                return null;
+
+            var prefix = isDebug ? "[DEBUG] " : "";
+            var sb = new StringBuilder();
+
+            sb.AppendLine($"{prefix}RSS 새 글 {allNewItems.Count}개");
+
+            // 최신순 정렬 후 전부 출력
+            foreach (var item in allNewItems.OrderByDescending(x => x.PubDate))
+            {
+                var categoryText = string.IsNullOrWhiteSpace(item.Category) ? "" : $"[{item.Category}] ";
+
+                var block = new StringBuilder();
+                block.AppendLine($"- {categoryText}{item.Title}");
+                block.AppendLine($"  {item.Link}");
+
+                if (sb.Length + block.Length + 20 > maxMessageLength)
+                {
+                    sb.AppendLine("(이하 생략)");
+                    break;
+                }
+
+                sb.Append(block);
+            }
+
+            return sb.ToString().Trim();
         }
     }
 }
