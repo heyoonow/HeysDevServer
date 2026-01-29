@@ -170,7 +170,7 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[NaverFinanceService] {stockCode} 오류: {ex.Message}");
+                Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [NaverFinanceService] {stockCode} 오류: {ex.Message}");
                 return null;
             }
         }

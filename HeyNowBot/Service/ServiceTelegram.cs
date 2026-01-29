@@ -13,6 +13,7 @@ namespace HeyNowBot.Service
     {
         Task SendMessageAsync(string text);
     }
+
     public class TelegramService : ITelegramService
     {
         private const string _botToken = "8439410251:AAEnbnXVmQfzJTNg9PF8Ik8V7q7mVLnCJoo";
@@ -29,7 +30,7 @@ namespace HeyNowBot.Service
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            Console.WriteLine($"[TelegramService] 전송 메시지: {text}");
+            Log($"전송 메시지: {text}");
 
             try
             {
@@ -44,7 +45,13 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
+                Log($"전송 실패: {ex.Message}");
             }
         }
-    }
+
+        private static void Log(string message)
+        {
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TelegramService] {message}");
+        }
+    }   
 }

@@ -26,6 +26,7 @@ namespace HeyNowBot
             _timeChekerService = new TimeChekerService();
 
             await _bot.SendMessageAsync("[HeyNowBot] 시작");
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [ProcessMain] RunAsync started");
 
             _timeChekerService.OnHourReached += async (hour, minute) =>
             {

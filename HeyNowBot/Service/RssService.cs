@@ -34,7 +34,7 @@ namespace HeyNowBot.Service
                 using var response = await _httpClient.GetAsync(rssUrl);
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[RssService] 요청 실패: {rssUrl} ({response.StatusCode})");
+                    Log($"요청 실패: {rssUrl} ({response.StatusCode})");
                     return new List<RssItem>();
                 }
 
@@ -56,45 +56,38 @@ namespace HeyNowBot.Service
                 if (!items.Any())
                     return new List<RssItem>();
 
-                // [추가] 디버그 모드일 경우: 무조건 최신 글 1개 반환
                 if (isDebug)
                 {
-                    Console.WriteLine($"[RssService] 디버그 모드 - 최신 글 1개 강제 반환: {rssUrl}");
+                    Log($"디버그 모드 - 최신 글 1개 강제 반환: {rssUrl}");
                     return items.Take(1).ToList();
                 }
 
                 var latestItemDate = items.First().PubDate;
 
-                // 1. 처음 체크하는 URL인 경우: 기준점만 잡고 리턴 (알림 X)
                 if (!_lastCheckTimes.ContainsKey(rssUrl))
                 {
                     _lastCheckTimes[rssUrl] = latestItemDate;
-                    Console.WriteLine($"[RssService] 초기화 완료: {rssUrl} (최신글: {latestItemDate})");
+                    Log($"초기화 완료: {rssUrl} (최신글: {latestItemDate:yyyy-MM-dd HH:mm:ss})");
                     return new List<RssItem>();
                 }
 
-                // 2. 새로운 글 필터링
                 var lastCheckTime = _lastCheckTimes[rssUrl];
                 var newItems = items.Where(x => x.PubDate > lastCheckTime).ToList();
 
-                // 3. 기준점 갱신
                 if (newItems.Any())
-                {
                     _lastCheckTimes[rssUrl] = newItems.First().PubDate;
-                }
 
                 return newItems;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[RssService] RSS 파싱 오류 ({rssUrl}): {ex.Message}");
+                Log($"RSS 파싱 오류 ({rssUrl}): {ex.Message}");
                 return new List<RssItem>();
             }
         }
 
         private static string ParseCategory(XElement itemElement)
         {
-            // RSS에 category가 여러 개면 모두 합침
             var categories = itemElement.Elements("category")
                 .Select(x => x.Value?.Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -115,6 +108,11 @@ namespace HeyNowBot.Service
                 return resultLocal;
 
             return DateTime.MinValue;
+        }
+
+        private static void Log(string message)
+        {
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [RssService] {message}");
         }
     }
 }

@@ -56,7 +56,7 @@ namespace HeyNowBot.Service
 
         public async Task InitializeRssAsync()
         {
-            Console.WriteLine("[TaskRunService] RSS 초기화 중...");
+            Log("RSS 초기화 중...");
             foreach (var url in _rssUrls)
             {
                 await rssService.GetNewFeedsAsync(url, isDebug: false);
@@ -65,7 +65,7 @@ namespace HeyNowBot.Service
 
         public async Task<string?> GetRssNewsMessageAsync(bool isDebug = false)
         {
-            Console.WriteLine($"[TaskRunService] RSS 체크 시작 (Debug: {isDebug})");
+            Log($"RSS 체크 시작 (Debug: {isDebug})");
 
             // 텔레그램 메시지 길이 방어(여유분 포함)
             const int maxMessageLength = 3500;
@@ -109,6 +109,11 @@ namespace HeyNowBot.Service
             }
 
             return sb.ToString().Trim();
+        }
+
+        private static void Log(string message)
+        {
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TaskRunService] {message}");
         }
     }
 }

@@ -7,6 +7,7 @@ namespace HeyNowBot.Service
     public class TimeChekerService
     {
         private Timer _timer;
+        private long _lastMinuteKey = -1;
 
         public event Func<int, int, Task> OnHourReached;
         public event Func<int, int, Task> On30MinReached;
@@ -15,29 +16,37 @@ namespace HeyNowBot.Service
 
         public void Start()
         {
-            var now = DateTime.Now;
-            var nextMinute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0).AddMinutes(1);
-            var dueTimeMs = (int)Math.Max(0, (nextMinute - now).TotalMilliseconds);
-
-            _timer = new Timer(CheckTime, null, dueTimeMs, 60000);
-            Console.WriteLine($"[TimeChekerService] 타이머 시작 (다음 분 정각까지 {dueTimeMs}ms, 이후 1분 간격)");
+            _timer = new Timer(CheckTime, null, 0, 1000); // 1초마다 체크
+            Log("타이머 시작 (1초 간격, 분 단위 1회 트리거)");
         }
 
         public void Stop()
         {
             _timer?.Dispose();
-            Console.WriteLine("[TimeChekerService] 타이머 중지");
+            Log("타이머 중지");
         }
 
         private void CheckTime(object state)
         {
             var now = DateTime.Now;
+
+            // 분 단위로 1회만 실행되게 키 생성 (YYYYMMDDHHmm)
+            var minuteKey =
+                (now.Year * 100000000L) +
+                (now.Month * 1000000L) +
+                (now.Day * 10000L) +
+                (now.Hour * 100L) +
+                now.Minute;
+
+            if (_lastMinuteKey == minuteKey)
+                return;
+
+            _lastMinuteKey = minuteKey;
             _ = FireAsync(now);
         }
 
         private async Task FireAsync(DateTime now)
         {
-            // 트리거는 조건에 맞으면 "전부" 발생 (억제 금지)
             await SafeInvokeAsync(On1MinReached, now.Hour, now.Minute);
 
             if (now.Minute % 10 == 0)
@@ -62,9 +71,14 @@ namespace HeyNowBot.Service
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[TimeChekerService] 이벤트 처리 오류: {ex}");
+                    Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeChekerService] 이벤트 처리 오류: {ex}");
                 }
             }
+        }
+
+        private static void Log(string message)
+        {
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeChekerService] {message}");
         }
     }
 }
