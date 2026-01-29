@@ -15,7 +15,6 @@ namespace HeyNowBot
         private TimeChekerService _timeChekerService;
         private NaverFinanceService _naverFinanceService;
 
-        // 같은 분에 여러 트리거가 겹쳐도 1번만 보내기 위한 배치 버퍼
         private readonly object _sendLock = new object();
         private readonly List<string> _pendingMessages = new List<string>();
         private CancellationTokenSource _flushCts;
@@ -32,15 +31,13 @@ namespace HeyNowBot
             {
                 var parts = new List<string>();
 
-                // 3시간마다 방문자
                 if (hour % 3 == 0)
                 {
                     var msg = await _taskRunService.GetCountAlarmMessageAsync(hour);
                     if (!string.IsNullOrWhiteSpace(msg))
                         parts.Add(msg);
                 }
-            
-                // RSS
+
                 var rssMsg = await _taskRunService.GetRssNewsMessageAsync(isDebug: false);
                 if (!string.IsNullOrWhiteSpace(rssMsg))
                     parts.Add(rssMsg);
@@ -52,13 +49,14 @@ namespace HeyNowBot
                 ScheduleFlush();
             };
 
-            // 주식 알림: 11시 이전(09:00~10:59) = 10분 간격 (주말 스킵)
+            // 주식 알림: 11시 이전(09:00~10:59) = 10분 간격 (15:30 가드 포함, 주말 스킵)
             _timeChekerService.On10MinReached += async (hour, minute) =>
             {
-                if (IsWeekend(DateTime.Now))
+                var now = DateTime.Now;
+
+                if (!IsStockTime(now))
                     return;
 
-                // 09~10시대만 10분 간격
                 if (hour < 9 || hour >= 11)
                     return;
 
@@ -73,17 +71,12 @@ namespace HeyNowBot
             // 주식 알림: 11시 이후(11:00~15:30) = 30분 간격 (주말 스킵)
             _timeChekerService.On30MinReached += async (hour, minute) =>
             {
-                if (IsWeekend(DateTime.Now))
+                var now = DateTime.Now;
+
+                if (!IsStockTime(now))
                     return;
 
-                // 11:00 ~ 15:30만 허용
                 if (hour < 11)
-                    return;
-
-                if (hour > 15)
-                    return;
-
-                if (hour == 15 && minute > 30)
                     return;
 
                 var msg = await _taskRunService.GetStockPriceMessageAsync();
@@ -97,9 +90,27 @@ namespace HeyNowBot
             _timeChekerService.Start();
             await Task.Delay(Timeout.Infinite);
         }
-        
+
         private static bool IsWeekend(DateTime now)
             => now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+
+        // 추가: 주식 알림 시간(09:00 ~ 15:30) 공통 가드
+        private static bool IsStockTime(DateTime now)
+        {
+            if (IsWeekend(now))
+                return false;
+
+            if (now.Hour < 9)
+                return false;
+
+            if (now.Hour > 15)
+                return false;
+
+            if (now.Hour == 15 && now.Minute > 30)
+                return false;
+
+            return true;
+        }
 
         private void QueueMessage(string message)
         {
@@ -151,7 +162,7 @@ namespace HeyNowBot
             if (!string.IsNullOrWhiteSpace(text))
                 await _bot.SendMessageAsync(text);
         }
-        
+
         private async Task SetLoadAsync()
         {
             _bot = new TelegramService();
