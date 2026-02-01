@@ -15,6 +15,9 @@ namespace HeyNowBot
         private TimeChekerService _timeChekerService;
         private NaverFinanceService _naverFinanceService;
 
+        // [추가] 야간 알림 금지 플래그 (true면 22:00~06:00 전송 금지)
+        private const bool EnableQuietHours = true;
+
         private readonly object _sendLock = new object();
         private readonly List<string> _pendingMessages = new List<string>();
         private CancellationTokenSource _flushCts;
@@ -49,7 +52,6 @@ namespace HeyNowBot
                 ScheduleFlush();
             };
 
-            // 주식 알림: 11시 이전(09:00~10:59) = 10분 간격 (15:30 가드 포함, 주말 스킵)
             _timeChekerService.On10MinReached += async (hour, minute) =>
             {
                 var now = DateTime.Now;
@@ -68,7 +70,6 @@ namespace HeyNowBot
                 ScheduleFlush();
             };
 
-            // 주식 알림: 11시 이후(11:00~15:30) = 30분 간격 (주말 스킵)
             _timeChekerService.On30MinReached += async (hour, minute) =>
             {
                 var now = DateTime.Now;
@@ -94,7 +95,6 @@ namespace HeyNowBot
         private static bool IsWeekend(DateTime now)
             => now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
-        // 추가: 주식 알림 시간(09:00 ~ 15:30) 공통 가드
         private static bool IsStockTime(DateTime now)
         {
             if (IsWeekend(now))
@@ -112,8 +112,19 @@ namespace HeyNowBot
             return true;
         }
 
+        // [추가] 야간 알림 금지 시간대(22:00 ~ 다음날 06:00)
+        private static bool IsQuietHours(DateTime now)
+            => now.Hour >= 22 || now.Hour < 6;
+
+        private bool IsSendAllowed(DateTime now)
+            => !EnableQuietHours || !IsQuietHours(now);
+
         private void QueueMessage(string message)
         {
+            // [추가] 전송 금지 시간대면 큐에 쌓지 않음
+            if (!IsSendAllowed(DateTime.Now))
+                return;
+
             lock (_sendLock)
             {
                 _pendingMessages.Add(message);
@@ -122,6 +133,10 @@ namespace HeyNowBot
 
         private void ScheduleFlush()
         {
+            // [추가] 전송 금지 시간대면 flush 스케줄도 하지 않음
+            if (!IsSendAllowed(DateTime.Now))
+                return;
+
             CancellationTokenSource cts;
 
             lock (_sendLock)
@@ -147,6 +162,16 @@ namespace HeyNowBot
 
         private async Task FlushAsync()
         {
+            // [추가] 최종 방어선: 전송 금지 시간대면 버리고 끝
+            if (!IsSendAllowed(DateTime.Now))
+            {
+                lock (_sendLock)
+                {
+                    _pendingMessages.Clear();
+                }
+                return;
+            }
+
             List<string> batch;
 
             lock (_sendLock)
