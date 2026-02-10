@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using System.Globalization;
 
 namespace HeyNowBot.Service
 {
@@ -16,15 +16,23 @@ namespace HeyNowBot.Service
         public string Category { get; set; }
     }
 
-    public class RssService
+    /// <summary>
+    /// RSS 피드 파싱 및 새 글 감지 서비스
+    /// </summary>
+    public interface IRssService
+    {
+        Task<List<RssItem>> GetNewFeedsAsync(string rssUrl, bool isDebug = false);
+    }
+
+    public class RssService : IRssService
     {
         private readonly HttpClient _httpClient;
-        private Dictionary<string, DateTime> _lastCheckTimes = new Dictionary<string, DateTime>();
+        private readonly Dictionary<string, DateTime> _lastCheckTimes = new();
 
         public RssService()
         {
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.DefaultUserAgent);
         }
 
         public async Task<List<RssItem>> GetNewFeedsAsync(string rssUrl, bool isDebug = false)
@@ -34,7 +42,7 @@ namespace HeyNowBot.Service
                 using var response = await _httpClient.GetAsync(rssUrl);
                 if (!response.IsSuccessStatusCode)
                 {
-                    Log($"요청 실패: {rssUrl} ({response.StatusCode})");
+                    Log($"{Constants.Message.RequestFailedMessage}: {rssUrl} ({response.StatusCode})");
                     return new List<RssItem>();
                 }
 
@@ -67,7 +75,7 @@ namespace HeyNowBot.Service
                 if (!_lastCheckTimes.ContainsKey(rssUrl))
                 {
                     _lastCheckTimes[rssUrl] = latestItemDate;
-                    Log($"초기화 완료: {rssUrl} (최신글: {latestItemDate:yyyy-MM-dd HH:mm:ss})");
+                    Log($"{Constants.Message.RssInitCompleteMessage}: {rssUrl} (최신글: {latestItemDate:yyyy-MM-dd HH:mm:ss})");
                     return new List<RssItem>();
                 }
 
@@ -81,7 +89,7 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
-                Log($"RSS 파싱 오류 ({rssUrl}): {ex.Message}");
+                Log($"{Constants.Message.ParsingErrorMessage} ({rssUrl}): {ex.Message}");
                 return new List<RssItem>();
             }
         }
@@ -97,9 +105,10 @@ namespace HeyNowBot.Service
             return categories.Count == 0 ? "" : string.Join(", ", categories);
         }
 
-        private DateTime ParseDate(string dateStr)
+        private static DateTime ParseDate(string dateStr)
         {
-            if (string.IsNullOrWhiteSpace(dateStr)) return DateTime.MinValue;
+            if (string.IsNullOrWhiteSpace(dateStr))
+                return DateTime.MinValue;
 
             if (DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
                 return result;

@@ -4,7 +4,22 @@ using System.Threading.Tasks;
 
 namespace HeyNowBot.Service
 {
-    public class TimeChekerService
+    /// <summary>
+    /// 시간 기반 이벤트 트리거 서비스
+    /// 분 단위로 1회 실행되며, 1분, 10분, 30분, 1시간 주기 이벤트를 발생시킴
+    /// </summary>
+    public interface ITimeCheckerService
+    {
+        event Func<int, int, Task> OnHourReached;
+        event Func<int, int, Task> On30MinReached;
+        event Func<int, int, Task> On10MinReached;
+        event Func<int, int, Task> On1MinReached;
+
+        void Start();
+        void Stop();
+    }
+
+    public class TimeCheckerService : ITimeCheckerService
     {
         private Timer _timer;
         private long _lastMinuteKey = -1;
@@ -17,13 +32,13 @@ namespace HeyNowBot.Service
         public void Start()
         {
             _timer = new Timer(CheckTime, null, 0, 1000); // 1초마다 체크
-            Log("타이머 시작 (1초 간격, 분 단위 1회 트리거)");
+            Log(Constants.Message.TimerStartMessage);
         }
 
         public void Stop()
         {
             _timer?.Dispose();
-            Log("타이머 중지");
+            Log(Constants.Message.TimerStopMessage);
         }
 
         private void CheckTime(object state)
@@ -61,7 +76,8 @@ namespace HeyNowBot.Service
 
         private static async Task SafeInvokeAsync(Func<int, int, Task> handler, int hour, int minute)
         {
-            if (handler is null) return;
+            if (handler is null)
+                return;
 
             foreach (var d in handler.GetInvocationList())
             {
@@ -71,14 +87,18 @@ namespace HeyNowBot.Service
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeChekerService] 이벤트 처리 오류: {ex}");
+                    Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeCheckerService] 이벤트 처리 오류: {ex.Message}");
                 }
             }
         }
 
         private static void Log(string message)
         {
-            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeChekerService] {message}");
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeCheckerService] {message}");
         }
     }
+
+    // 레거시 호환성 유지를 위한 별칭
+    [Obsolete("TimeCheckerService를 사용하세요")]
+    public class TimeChekerService : TimeCheckerService { }
 }

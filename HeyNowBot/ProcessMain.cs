@@ -1,208 +1,172 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HeyNowBot.Service;
 
 namespace HeyNowBot
 {
+    /// <summary>
+    /// 애플리케이션 메인 프로세스
+    /// 시간 기반 이벤트에 따라 작업을 실행하고 메시지를 전송
+    /// </summary>
     public class ProcessMain
     {
-        private ITelegramService _bot;
-        private IServiceSupabase _supabase;
-        private ITaskRunService _taskRunService;
-        private TimeChekerService _timeChekerService;
-        private NaverFinanceService _naverFinanceService;
+        private readonly ITelegramService _bot;
+        private readonly ISupabaseService _supabase;
+        private readonly ITaskRunService _taskRunService;
+        private readonly ITimeCheckerService _timeCheckerService;
+        private readonly IMessageQueue _messageQueue;
+        private readonly IDailyReportService _dailyReportService;
 
-        // [추가] 야간 알림 금지 플래그 (true면 22:00~06:00 전송 금지)
-        private const bool EnableQuietHours = true;
-
-        private readonly object _sendLock = new object();
-        private readonly List<string> _pendingMessages = new List<string>();
-        private CancellationTokenSource _flushCts;
+        public ProcessMain(
+            ITelegramService bot,
+            ISupabaseService supabase,
+            ITaskRunService taskRunService,
+            ITimeCheckerService timeCheckerService,
+            IMessageQueue messageQueue,
+            IDailyReportService dailyReportService)
+        {
+            _bot = bot ?? throw new ArgumentNullException(nameof(bot));
+            _supabase = supabase ?? throw new ArgumentNullException(nameof(supabase));
+            _taskRunService = taskRunService ?? throw new ArgumentNullException(nameof(taskRunService));
+            _timeCheckerService = timeCheckerService ?? throw new ArgumentNullException(nameof(timeCheckerService));
+            _messageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
+            _dailyReportService = dailyReportService ?? throw new ArgumentNullException(nameof(dailyReportService));
+        }
 
         public async Task RunAsync()
         {
-            await SetLoadAsync();
-            _timeChekerService = new TimeChekerService();
+            await _bot.SendMessageAsync(Constants.Message.StartMessage);
+            Log("RunAsync 시작");
 
-            await _bot.SendMessageAsync("[HeyNowBot] 시작");
-            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [ProcessMain] RunAsync started");
+            await _taskRunService.InitializeRssAsync();
+            RegisterEventHandlers();
+            _timeCheckerService.Start();
 
-            _timeChekerService.OnHourReached += async (hour, minute) =>
+            await Task.Delay(Timeout.Infinite);
+        }
+
+        private void RegisterEventHandlers()
+        {
+            _timeCheckerService.OnHourReached += HandleHourReachedAsync;
+            _timeCheckerService.On10MinReached += HandleOn10MinReachedAsync;
+            _timeCheckerService.On30MinReached += HandleOn30MinReachedAsync;
+            _timeCheckerService.OnHourReached += HandleDailyReportAsync;
+        }
+
+        private async Task HandleDailyReportAsync(int hour, int minute)
+        {
+            try
+            {
+                // 아침 8시에만 실행
+                if (hour != Constants.Email.DailyReportHour || minute != Constants.Email.DailyReportMinute)
+                    return;
+
+                Log("일일 보고서 전송 시작");
+                await _dailyReportService.SendDailyReportAsync();
+            }
+            catch (Exception ex)
+            {
+                Log($"일일 보고서 전송 오류: {ex.Message}");
+            }
+        }
+
+        private async Task HandleHourReachedAsync(int hour, int minute)
+        {
+            try
             {
                 var parts = new List<string>();
 
-                if (hour % 3 == 0)
+                // 3시간 단위 방문자 통계
+                if (hour % Constants.Schedule.VisitCountIntervalHours == 0)
                 {
                     var msg = await _taskRunService.GetCountAlarmMessageAsync(hour);
                     if (!string.IsNullOrWhiteSpace(msg))
                         parts.Add(msg);
                 }
 
+                // RSS 뉴스
                 var rssMsg = await _taskRunService.GetRssNewsMessageAsync(isDebug: false);
                 if (!string.IsNullOrWhiteSpace(rssMsg))
                     parts.Add(rssMsg);
 
-                if (parts.Count == 0)
-                    return;
-
-                QueueMessage(string.Join("\n\n", parts));
-                ScheduleFlush();
-            };
-
-            _timeChekerService.On10MinReached += async (hour, minute) =>
+                if (parts.Count > 0)
+                {
+                    _messageQueue.Enqueue(string.Join("\n\n", parts));
+                }
+            }
+            catch (Exception ex)
             {
-                var now = DateTime.Now;
-
-                if (!IsStockTime(now))
-                    return;
-
-                if (hour < 9 || hour >= 11)
-                    return;
-
-                var msg = await _taskRunService.GetStockPriceMessageAsync();
-                if (string.IsNullOrWhiteSpace(msg))
-                    return;
-
-                QueueMessage(msg);
-                ScheduleFlush();
-            };
-
-            _timeChekerService.On30MinReached += async (hour, minute) =>
-            {
-                var now = DateTime.Now;
-
-                if (!IsStockTime(now))
-                    return;
-
-                if (hour < 11)
-                    return;
-
-                var msg = await _taskRunService.GetStockPriceMessageAsync();
-                if (string.IsNullOrWhiteSpace(msg))
-                    return;
-
-                QueueMessage(msg);
-                ScheduleFlush();
-            };
-
-            _timeChekerService.Start();
-            await Task.Delay(Timeout.Infinite);
+                Log($"시간 도달 이벤트 처리 오류: {ex.Message}");
+            }
         }
 
-        private static bool IsWeekend(DateTime now)
-            => now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-
-        private static bool IsStockTime(DateTime now)
+        private async Task HandleOn10MinReachedAsync(int hour, int minute)
         {
-            if (IsWeekend(now))
+            try
+            {
+                if (!IsStockTradingHours(hour, minute))
+                    return;
+
+                if (hour < 9 || hour >= Constants.Schedule.StockMarketMorningEndHour)
+                    return;
+
+                var msg = await _taskRunService.GetStockPriceMessageAsync();
+                if (!string.IsNullOrWhiteSpace(msg))
+                    _messageQueue.Enqueue(msg);
+            }
+            catch (Exception ex)
+            {
+                Log($"10분 이벤트 처리 오류: {ex.Message}");
+            }
+        }
+
+        private async Task HandleOn30MinReachedAsync(int hour, int minute)
+        {
+            try
+            {
+                if (!IsStockTradingHours(hour, minute))
+                    return;
+
+                if (hour < Constants.Schedule.StockMarketMorningEndHour)
+                    return;
+
+                var msg = await _taskRunService.GetStockPriceMessageAsync();
+                if (!string.IsNullOrWhiteSpace(msg))
+                    _messageQueue.Enqueue(msg);
+            }
+            catch (Exception ex)
+            {
+                Log($"30분 이벤트 처리 오류: {ex.Message}");
+            }
+        }
+
+        private static bool IsStockTradingHours(int hour, int minute)
+        {
+            var now = DateTime.Now;
+
+            // 주말 제외
+            if (now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
                 return false;
 
-            if (now.Hour < 9)
+            // 시장 시간 확인 (09:00 ~ 15:30)
+            if (hour < Constants.Schedule.StockMarketStartHour)
                 return false;
 
-            if (now.Hour > 15)
+            if (hour > Constants.Schedule.StockMarketEndHour)
                 return false;
 
-            if (now.Hour == 15 && now.Minute > 30)
+            if (hour == Constants.Schedule.StockMarketEndHour && 
+                minute > Constants.Schedule.StockMarketEndMinute)
                 return false;
 
             return true;
         }
 
-        // [추가] 야간 알림 금지 시간대(22:00 ~ 다음날 06:00)
-        private static bool IsQuietHours(DateTime now)
-            => now.Hour >= 22 || now.Hour < 6;
-
-        private bool IsSendAllowed(DateTime now)
-            => !EnableQuietHours || !IsQuietHours(now);
-
-        private void QueueMessage(string message)
+        private static void Log(string message)
         {
-            // [추가] 전송 금지 시간대면 큐에 쌓지 않음
-            if (!IsSendAllowed(DateTime.Now))
-                return;
-
-            lock (_sendLock)
-            {
-                _pendingMessages.Add(message);
-            }
-        }
-
-        private void ScheduleFlush()
-        {
-            // [추가] 전송 금지 시간대면 flush 스케줄도 하지 않음
-            if (!IsSendAllowed(DateTime.Now))
-                return;
-
-            CancellationTokenSource cts;
-
-            lock (_sendLock)
-            {
-                _flushCts?.Cancel();
-                _flushCts?.Dispose();
-                _flushCts = new CancellationTokenSource();
-                cts = _flushCts;
-            }
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await Task.Delay(400, cts.Token);
-                    await FlushAsync();
-                }
-                catch (OperationCanceledException)
-                {
-                }
-            });
-        }
-
-        private async Task FlushAsync()
-        {
-            // [추가] 최종 방어선: 전송 금지 시간대면 버리고 끝
-            if (!IsSendAllowed(DateTime.Now))
-            {
-                lock (_sendLock)
-                {
-                    _pendingMessages.Clear();
-                }
-                return;
-            }
-
-            List<string> batch;
-
-            lock (_sendLock)
-            {
-                if (_pendingMessages.Count == 0)
-                    return;
-
-                batch = new List<string>(_pendingMessages);
-                _pendingMessages.Clear();
-            }
-
-            var text = string.Join("\n\n", new HashSet<string>(batch)).Trim();
-            if (!string.IsNullOrWhiteSpace(text))
-                await _bot.SendMessageAsync(text);
-        }
-
-        private async Task SetLoadAsync()
-        {
-            _bot = new TelegramService();
-            _supabase = new ServiceSupabase();
-
-            _naverFinanceService = new NaverFinanceService();
-            var rssService = new RssService();
-
-            _taskRunService = new TaskRunService(
-                supabase: _supabase,
-                naverFinance: _naverFinanceService,
-                rssService: rssService
-            );
-
-            await _taskRunService.InitializeRssAsync();
+            Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [ProcessMain] {message}");
         }
     }
 }

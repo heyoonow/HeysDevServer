@@ -1,14 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace HeyNowBot.Service
 {
+    /// <summary>
+    /// Telegram 메시지 전송 서비스
+    /// </summary>
     public interface ITelegramService
     {
         Task SendMessageAsync(string text);
@@ -16,13 +15,11 @@ namespace HeyNowBot.Service
 
     public class TelegramService : ITelegramService
     {
-        private const string _botToken = "8439410251:AAEnbnXVmQfzJTNg9PF8Ik8V7q7mVLnCJoo";
-        private const long _chatId = 7747196424;
         private readonly TelegramBotClient _bot;
 
         public TelegramService()
         {
-            _bot = new TelegramBotClient(_botToken);
+            _bot = new TelegramBotClient(Constants.Telegram.BotToken);
         }
 
         public async Task SendMessageAsync(string text)
@@ -30,14 +27,15 @@ namespace HeyNowBot.Service
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            Log($"전송 메시지: {text}");
+            var preview = text[..Math.Min(50, text.Length)];
+            Log($"메시지 전송: {preview}{'…'}");
 
             try
             {
                 await _bot.SendMessage(
-                    chatId: _chatId,
+                    chatId: Constants.Telegram.ChatId,
                     text: text,
-                    linkPreviewOptions: new LinkPreviewOptions
+                    linkPreviewOptions: new()
                     {
                         IsDisabled = true
                     }
