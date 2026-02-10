@@ -17,22 +17,19 @@ namespace HeyNowBot
         private readonly ITaskRunService _taskRunService;
         private readonly ITimeCheckerService _timeCheckerService;
         private readonly IMessageQueue _messageQueue;
-        private readonly IDailyReportService _dailyReportService;
 
         public ProcessMain(
             ITelegramService bot,
             ISupabaseService supabase,
             ITaskRunService taskRunService,
             ITimeCheckerService timeCheckerService,
-            IMessageQueue messageQueue,
-            IDailyReportService dailyReportService)
+            IMessageQueue messageQueue)
         {
             _bot = bot ?? throw new ArgumentNullException(nameof(bot));
             _supabase = supabase ?? throw new ArgumentNullException(nameof(supabase));
             _taskRunService = taskRunService ?? throw new ArgumentNullException(nameof(taskRunService));
             _timeCheckerService = timeCheckerService ?? throw new ArgumentNullException(nameof(timeCheckerService));
             _messageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
-            _dailyReportService = dailyReportService ?? throw new ArgumentNullException(nameof(dailyReportService));
         }
 
         public async Task RunAsync()
@@ -52,24 +49,6 @@ namespace HeyNowBot
             _timeCheckerService.OnHourReached += HandleHourReachedAsync;
             _timeCheckerService.On10MinReached += HandleOn10MinReachedAsync;
             _timeCheckerService.On30MinReached += HandleOn30MinReachedAsync;
-            _timeCheckerService.OnHourReached += HandleDailyReportAsync;
-        }
-
-        private async Task HandleDailyReportAsync(int hour, int minute)
-        {
-            try
-            {
-                // 아침 8시에만 실행
-                if (hour != Constants.Email.DailyReportHour || minute != Constants.Email.DailyReportMinute)
-                    return;
-
-                Log("일일 보고서 전송 시작");
-                await _dailyReportService.SendDailyReportAsync();
-            }
-            catch (Exception ex)
-            {
-                Log($"일일 보고서 전송 오류: {ex.Message}");
-            }
         }
 
         private async Task HandleHourReachedAsync(int hour, int minute)
