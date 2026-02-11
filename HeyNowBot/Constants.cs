@@ -3,143 +3,128 @@ using System.Collections.Generic;
 namespace HeyNowBot
 {
     /// <summary>
-    /// ¾ÖÇÃ¸®ÄÉÀÌ¼Ç Àü¿ª »ó¼ö Á¤ÀÇ
+    /// ì• í”Œë¦¬ì¼€ì´ì…˜ ì „ì—­ ìƒìˆ˜ ì •ì˜
     /// </summary>
     public static class Constants
     {
         public static class Telegram
         {
-            /// <summary>Telegram Bot Token (È¯°æº¯¼ö·Î ¼³Á¤ ±ÇÀå)</summary>
+            /// <summary>Telegram Bot Token (í™˜ê²½ë³€ìˆ˜ë¡œ ì„¤ì • ê¶Œì¥)</summary>
             public static string BotToken => 
                 System.Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN") 
                 ?? "8439410251:AAEnbnXVmQfzJTNg9PF8Ik8V7q7mVLnCJoo";
 
-            /// <summary>Telegram Chat ID (È¯°æº¯¼ö·Î ¼³Á¤ ±ÇÀå)</summary>
+            /// <summary>Telegram Chat ID (í™˜ê²½ë³€ìˆ˜ë¡œ ì„¤ì • ê¶Œì¥)</summary>
             public static long ChatId =>
                 long.Parse(System.Environment.GetEnvironmentVariable("TELEGRAM_CHAT_ID") ?? "7747196424");
         }
 
         public static class Stock
         {
-            /// <summary>¸ğ´ÏÅÍ¸µ ÁÖ½Ä ÄÚµå (»ï¼ºÀüÀÚ)</summary>
+            /// <summary>ëª¨ë‹ˆí„°ë§ ì£¼ì‹ ì½”ë“œ (ì‚¼ì„±ì „ì)</summary>
             public const string MonitoringStockCode = "360750";
         }
 
         public static class Rss
         {
-            /// <summary>±âº» RSS ÇÇµå URL ¸ñ·Ï</summary>
+            /// <summary>ê¸°ë³¸ RSS í”¼ë“œ URL ëª©ë¡</summary>
             public static readonly List<string> FeedUrls = new()
             {
                 "https://bbs.ruliweb.com/ps/board/300001/rss",
                 "https://bbs.ruliweb.com/mobile/board/300008/rss",
                 "https://bbs.ruliweb.com/market/board/1020/rss",
             };
-
-            /// <summary>Å°¿öµåº° RSS URL ¸ñ·Ï (¿©·¯ ¼Ò½º)</summary>
-            public static readonly Dictionary<string, List<string>> KeywordRssUrls = new()
-            {
-                { "Flutter", new List<string>
-                {
-                    "https://news.google.com/rss/search?q=flutter&hl=ko&gl=KR",
-                    "https://www.reddit.com/r/FlutterDev/new/.rss",
-                    "https://www.reddit.com/r/flutter/new/.rss",
-                    "https://www.reddit.com/r/Dart/new/.rss",
-                }},
-            };
-
-            /// <summary>Å°¿öµåº° ´º½º ÃÖ´ë °³¼ö</summary>
-            public const int MaxKeywordNews = 10;
         }
 
         public static class Schedule
         {
-            /// <summary>¾ß°£ ¾Ë¸² ±İÁö È°¼ºÈ­ (22:00 ~ 06:00)</summary>
+            /// <summary>ì•¼ê°„ ì•Œë¦¼ ê¸ˆì§€ í™œì„±í™” (22:00 ~ 06:00)</summary>
             public const bool EnableQuietHours = true;
 
-            /// <summary>¾ß°£ ½ÃÀÛ ½Ã°£</summary>
+            /// <summary>ì•¼ê°„ ì‹œì‘ ì‹œê°„</summary>
             public const int QuietHourStart = 22;
 
-            /// <summary>¾ß°£ Á¾·á ½Ã°£</summary>
+            /// <summary>ì•¼ê°„ ì¢…ë£Œ ì‹œê°„</summary>
             public const int QuietHourEnd = 6;
 
-            /// <summary>ÁÖ½Ä ½ÃÀå ½ÃÀÛ ½Ã°£</summary>
+            /// <summary>ì£¼ì‹ ì‹œì¥ ì‹œì‘ ì‹œê°„</summary>
             public const int StockMarketStartHour = 9;
 
-            /// <summary>¿ÀÀü ÁÖ½Ä Á¶È¸ Á¾·á ½Ã°£</summary>
+            /// <summary>ì˜¤ì „ ì£¼ì‹ ì¡°íšŒ ì¢…ë£Œ ì‹œê°„</summary>
             public const int StockMarketMorningEndHour = 11;
 
-            /// <summary>¿ÀÈÄ ÁÖ½Ä ½ÃÀå Á¾·á ½Ã°£</summary>
+            /// <summary>ì˜¤í›„ ì£¼ì‹ ì‹œì¥ ì¢…ë£Œ ì‹œê°„</summary>
             public const int StockMarketEndHour = 15;
 
-            /// <summary>¿ÀÈÄ ÁÖ½Ä ½ÃÀå Á¾·á ºĞ</summary>
+            /// <summary>ì˜¤í›„ ì£¼ì‹ ì‹œì¥ ì¢…ë£Œ ë¶„</summary>
             public const int StockMarketEndMinute = 30;
 
-            /// <summary>¹æ¹®ÀÚ Áı°è ÁÖ±â (½Ã°£)</summary>
+            /// <summary>ë°©ë¬¸ì ì§‘ê³„ ì£¼ê¸° (ì‹œê°„)</summary>
             public const int VisitCountIntervalHours = 3;
 
-            /// <summary>¸Ş½ÃÁö ¹èÄ¡ ÇÃ·¯½Ã µô·¹ÀÌ (¹Ğ¸®ÃÊ)</summary>
+            /// <summary>ë©”ì‹œì§€ ë°°ì¹˜ í”ŒëŸ¬ì‹œ ë”œë ˆì´ (ë°€ë¦¬ì´ˆ)</summary>
             public const int MessageFlushDelayMs = 400;
 
-            /// <summary>Supabase ÃÊ±âÈ­ ´ë±â½Ã°£ (¹Ğ¸®ÃÊ)</summary>
+            /// <summary>Supabase ì´ˆê¸°í™” ëŒ€ê¸°ì‹œê°„ (ë°€ë¦¬ì´ˆ)</summary>
             public const int SupabaseInitWaitMs = 300;
 
-            /// <summary>µ¥ÀÌÅÍº£ÀÌ½º ¿äÃ» °£ ´ë±â½Ã°£ (¹Ğ¸®ÃÊ)</summary>
+            /// <summary>ë°ì´í„°ë² ì´ìŠ¤ ìš”ì²­ ê°„ ëŒ€ê¸°ì‹œê°„ (ë°€ë¦¬ì´ˆ)</summary>
             public const int DatabaseRequestDelayMs = 100;
         }
 
         public static class Message
         {
-            /// <summary>Telegram ¸Ş½ÃÁö ÃÖ´ë ±æÀÌ (¹®ÀÚ Á¦ÇÑ)</summary>
+            /// <summary>Telegram ë©”ì‹œì§€ ìµœëŒ€ ê¸¸ì´ (ë¬¸ì ì œí•œ)</summary>
             public const int MaxMessageLength = 3500;
 
-            /// <summary>º¿ ½ÃÀÛ ¸Ş½ÃÁö</summary>
-            public const string StartMessage = "[HeyNowBot] ½ÃÀÛµÊ";
+            /// <summary>ë´‡ ì‹œì‘ ë©”ì‹œì§€</summary>
+            public const string StartMessage = "[HeyNowBot] ì‹œì‘ë¨";
 
-            /// <summary>RSS ÃÊ±âÈ­ ¸Ş½ÃÁö</summary>
-            public const string RssInitializationMessage = "RSS ÃÊ±âÈ­ Áß...";
+            /// <summary>RSS ì´ˆê¸°í™” ë©”ì‹œì§€</summary>
+            public const string RssInitializationMessage = "RSS ì´ˆê¸°í™” ì¤‘...";
 
-            /// <summary>RSS Ã¼Å© ¸Ş½ÃÁö</summary>
-            public const string RssCheckStartMessage = "RSS Ã¼Å© ½ÃÀÛ";
+            /// <summary>RSS ì²´í¬ ë©”ì‹œì§€</summary>
+            public const string RssCheckStartMessage = "RSS ì²´í¬ ì‹œì‘";
 
-            /// <summary>RSS ÃÊ±âÈ­ ¿Ï·á ¸Ş½ÃÁö</summary>
-            public const string RssInitCompleteMessage = "ÃÊ±âÈ­ ¿Ï·á";
+            /// <summary>RSS ì´ˆê¸°í™” ì™„ë£Œ ë©”ì‹œì§€</summary>
+            public const string RssInitCompleteMessage = "ì´ˆê¸°í™” ì™„ë£Œ";
 
-            /// <summary>¿äÃ» ½ÇÆĞ ¸Ş½ÃÁö</summary>
-            public const string RequestFailedMessage = "¿äÃ» ½ÇÆĞ";
+            /// <summary>ìš”ì²­ ì‹¤íŒ¨ ë©”ì‹œì§€</summary>
+            public const string RequestFailedMessage = "ìš”ì²­ ì‹¤íŒ¨";
 
-            /// <summary>ÆÄ½Ì ½ÇÆĞ ¸Ş½ÃÁö</summary>
-            public const string ParsingErrorMessage = "RSS ÆÄ½Ì ½ÇÆĞ";
+            /// <summary>íŒŒì‹± ì‹¤íŒ¨ ë©”ì‹œì§€</summary>
+            public const string ParsingErrorMessage = "RSS íŒŒì‹± ì‹¤íŒ¨";
 
-            /// <summary>ÁÖ½Ä Á¤º¸ Á¶È¸ ½ÇÆĞ ¸Ş½ÃÁö</summary>
-            public const string StockInfoFailedMessage = "[NaverFinanceService] ÁÖ½Ä Á¤º¸¸¦ °¡Á®¿À´Âµ¥ ½ÇÆĞ";
+            /// <summary>ì£¼ì‹ ì •ë³´ ì¡°íšŒ ì‹¤íŒ¨ ë©”ì‹œì§€</summary>
+            public const string StockInfoFailedMessage = "[NaverFinanceService] ì£¼ì‹ ì •ë³´ë¥¼ ê°€ì ¸ì˜¤ëŠ”ë° ì‹¤íŒ¨";
 
-            /// <summary>Å¸ÀÌ¸Ó ½ÃÀÛ ¸Ş½ÃÁö</summary>
-            public const string TimerStartMessage = "Å¸ÀÌ¸Ó ½ÃÀÛ (1ÃÊ °£°İ, ¸Å ½Ã°£ 1È¸ Æ®¸®°Å)";
+            /// <summary>íƒ€ì´ë¨¸ ì‹œì‘ ë©”ì‹œì§€</summary>
+            public const string TimerStartMessage = "íƒ€ì´ë¨¸ ì‹œì‘ (1ì´ˆ ê°„ê²©, ë§¤ ì‹œê°„ 1íšŒ íŠ¸ë¦¬ê±°)";
 
-            /// <summary>Å¸ÀÌ¸Ó ÁßÁö ¸Ş½ÃÁö</summary>
-            public const string TimerStopMessage = "Å¸ÀÌ¸Ó ÁßÁö";
+            /// <summary>íƒ€ì´ë¨¸ ì¤‘ì§€ ë©”ì‹œì§€</summary>
+            public const string TimerStopMessage = "íƒ€ì´ë¨¸ ì¤‘ì§€";
         }
 
         public static class UserAgent
         {
-            /// <summary>HTTP ¿äÃ»¿ë User-Agent</summary>
+            /// <summary>HTTP ìš”ì²­ìš© User-Agent</summary>
             public const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
             /// <summary>Naver Finance Referer</summary>
             public const string NaverFinanceReferer = "https://finance.naver.com/";
 
-            /// <summary>Accept-Language ¼³Á¤</summary>
+            /// <summary>Accept-Language ì„¤ì •</summary>
             public const string AcceptLanguage = "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7";
         }
 
         public static class Supabase
         {
-            /// <summary>Supabase URL (È¯°æº¯¼ö ¶Ç´Â ±âº»°ª)</summary>
+            /// <summary>Supabase URL (í™˜ê²½ë³€ìˆ˜ ë˜ëŠ” ê¸°ë³¸ê°’)</summary>
             public static string Url =>
                 System.Environment.GetEnvironmentVariable("SUPABASE_URL")
                 ?? "https://hlskzjtcivwyixxaynpl.supabase.co";
 
-            /// <summary>Supabase Anon Key (È¯°æº¯¼ö ¶Ç´Â ±âº»°ª)</summary>
+            /// <summary>Supabase Anon Key (í™˜ê²½ë³€ìˆ˜ ë˜ëŠ” ê¸°ë³¸ê°’)</summary>
             public static string AnonKey =>
                 System.Environment.GetEnvironmentVariable("SUPABASE_ANON_KEY")
                 ?? "sb_publishable_vVNmybp22sZAxPkghJvoZQ__h3GgxKv";

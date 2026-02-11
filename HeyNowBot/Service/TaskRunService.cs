@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +17,6 @@ namespace HeyNowBot.Service
         Task InitializeRssAsync();
         Task<string?> GetRssNewsMessageAsync(bool isDebug = false);
         Task<List<VisitLogModel>?> GetVisitListAsync();
-        Task<string?> GetKeywordNewsMessageAsync(string keyword);
     }
 
     public class TaskRunService : ITaskRunService
@@ -158,118 +157,6 @@ namespace HeyNowBot.Service
         private static void Log(string message)
         {
             Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TaskRunService] {message}");
-        }
-
-        public async Task<string?> GetKeywordNewsMessageAsync(string keyword)
-        {
-            try
-            {
-                Log($"키워드 뉴스 검색 시작: {keyword}");
-
-                // 키워드별 RSS URL이 있으면 사용, 없으면 기본 URL에서 필터링
-                if (!Constants.Rss.KeywordRssUrls.TryGetValue(keyword, out var keywordRssUrls))
-                {
-                    Log($"'{keyword}'에 대한 전용 RSS URL이 없습니다. 기본 RSS에서 필터링합니다.");
-                    return await SearchInBasicRssAsync(keyword);
-                }
-
-                // 모든 키워드 RSS URL에서 뉴스 수집
-                var allNewItems = new List<RssItem>();
-                var yesterday = DateTime.Now.Date.AddDays(-1);
-
-                foreach (var keywordRssUrl in keywordRssUrls)
-                {
-                    try
-                    {
-                        var newItems = await _rssService.GetNewFeedsAsync(keywordRssUrl, isDebug: false);
-                        
-                        // 어제 이후 발행된 뉴스만 필터링
-                        var recentItems = newItems?
-                            .Where(item => item.PubDate.Date >= yesterday)
-                            .ToList();
-
-                        if (recentItems?.Count > 0)
-                        {
-                            Log($"{keywordRssUrl}에서 {recentItems.Count}개의 어제 이후 뉴스 발견");
-                            allNewItems.AddRange(recentItems);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"RSS 조회 오류 ({keywordRssUrl}): {ex.Message}");
-                    }
-                }
-
-                if (allNewItems.Count == 0)
-                {
-                    Log($"[{keyword}] 어제 이후 발행된 뉴스 없음");
-                    return null;
-                }
-
-                var sb = new StringBuilder();
-                sb.AppendLine($"[{keyword}] 어제 이후 뉴스 {allNewItems.Count}개");
-
-                foreach (var item in allNewItems.OrderByDescending(x => x.PubDate).Take(Constants.Rss.MaxKeywordNews))
-                {
-                    var categoryText = string.IsNullOrWhiteSpace(item.Category) ? "" : $"[{item.Category}] ";
-                    var block = $"- {categoryText}{item.Title}\n  {item.Link}\n";
-                    sb.Append(block);
-                }
-
-                return sb.ToString().Trim();
-            }
-            catch (Exception ex)
-            {
-                Log($"키워드 뉴스 검색 오류: {ex.Message}");
-                return null;
-            }
-        }
-
-        private async Task<string?> SearchInBasicRssAsync(string keyword)
-        {
-            try
-            {
-                var allNewItems = new List<RssItem>();
-
-                foreach (var url in Constants.Rss.FeedUrls)
-                {
-                    try
-                    {
-                        var newItems = await _rssService.GetNewFeedsAsync(url, isDebug: false);
-                        var keywordItems = newItems?.Where(item => 
-                            item.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            item.Category.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
-
-                        if (keywordItems?.Count > 0)
-                            allNewItems.AddRange(keywordItems);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"RSS 조회 오류 ({url}): {ex.Message}");
-                    }
-                }
-
-                if (allNewItems.Count == 0)
-                    return null;
-
-                var sb = new StringBuilder();
-                sb.AppendLine($"[{keyword}] 관련 뉴스 {allNewItems.Count}개");
-
-                foreach (var item in allNewItems.OrderByDescending(x => x.PubDate).Take(Constants.Rss.MaxKeywordNews))
-                {
-                    var categoryText = string.IsNullOrWhiteSpace(item.Category) ? "" : $"[{item.Category}] ";
-                    var block = $"- {categoryText}{item.Title}\n  {item.Link}\n";
-                    sb.Append(block);
-                }
-
-                return sb.ToString().Trim();
-            }
-            catch (Exception ex)
-            {
-                Log($"기본 RSS 필터링 오류: {ex.Message}");
-                return null;
-            }
         }
     }
 }

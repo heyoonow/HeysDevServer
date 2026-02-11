@@ -8,6 +8,10 @@ IMAGE_NAME="heynowbot-app"
 CONTAINER_NAME="heynowbot-service"
 PROJECT_NAME="HeyNowBot" 
 
+# Telegram 환경 변수 (필수)
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID}"
+
 # -----------------------------------------------------------------
 # ** [중요 수정] 줄 끝 문자 문제 해결 **
 # (이전에 sed나 dos2unix를 사용했다면 이 코드는 없어도 되지만, 혹시 모를 재발 방지)
@@ -48,10 +52,14 @@ echo "✅ 2. 도커 이미지 빌드 성공"
 # =================================================================
 echo "--- 3. 새로운 컨테이너 실행 시작 ($CONTAINER_NAME) ---"
 
+
 # 기존과 동일하게 백그라운드 및 자동 재시작 설정
+# ✅ 텔레그램 환경 변수 추가
 docker run -d \
 --restart=always \
 -e TZ=Asia/Seoul \
+-e TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" \
+-e TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID" \
 --name $CONTAINER_NAME \
 $IMAGE_NAME
 
