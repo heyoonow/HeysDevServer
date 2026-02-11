@@ -89,11 +89,11 @@ namespace HeyNowBot
 
         public static class Message
         {
-            /// <summary>Telegram 메시지 최대 길이 (여유분 포함)</summary>
+            /// <summary>Telegram 메시지 최대 길이 (문자 제한)</summary>
             public const int MaxMessageLength = 3500;
 
             /// <summary>봇 시작 메시지</summary>
-            public const string StartMessage = "[HeyNowBot] 시작";
+            public const string StartMessage = "[HeyNowBot] 시작됨";
 
             /// <summary>RSS 초기화 메시지</summary>
             public const string RssInitializationMessage = "RSS 초기화 중...";
@@ -107,14 +107,14 @@ namespace HeyNowBot
             /// <summary>요청 실패 메시지</summary>
             public const string RequestFailedMessage = "요청 실패";
 
-            /// <summary>파싱 오류 메시지</summary>
-            public const string ParsingErrorMessage = "RSS 파싱 오류";
+            /// <summary>파싱 실패 메시지</summary>
+            public const string ParsingErrorMessage = "RSS 파싱 실패";
 
-            /// <summary>주식 정보 실패 메시지</summary>
+            /// <summary>주식 정보 조회 실패 메시지</summary>
             public const string StockInfoFailedMessage = "[NaverFinanceService] 주식 정보를 가져오는데 실패";
 
             /// <summary>타이머 시작 메시지</summary>
-            public const string TimerStartMessage = "타이머 시작 (1초 간격, 분 단위 1회 트리거)";
+            public const string TimerStartMessage = "타이머 시작 (1초 간격, 매 시간 1회 트리거)";
 
             /// <summary>타이머 중지 메시지</summary>
             public const string TimerStopMessage = "타이머 중지";
@@ -128,54 +128,21 @@ namespace HeyNowBot
             /// <summary>Naver Finance Referer</summary>
             public const string NaverFinanceReferer = "https://finance.naver.com/";
 
-            /// <summary>Accept-Language 헤더</summary>
+            /// <summary>Accept-Language 설정</summary>
             public const string AcceptLanguage = "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7";
         }
 
         public static class Supabase
         {
-            /// <summary>Supabase URL (환경변수로 설정 권장)</summary>
+            /// <summary>Supabase URL (환경변수 또는 기본값)</summary>
             public static string Url =>
                 System.Environment.GetEnvironmentVariable("SUPABASE_URL")
                 ?? "https://hlskzjtcivwyixxaynpl.supabase.co";
 
-            /// <summary>Supabase Anon Key (환경변수로 설정 권장)</summary>
+            /// <summary>Supabase Anon Key (환경변수 또는 기본값)</summary>
             public static string AnonKey =>
                 System.Environment.GetEnvironmentVariable("SUPABASE_ANON_KEY")
                 ?? "sb_publishable_vVNmybp22sZAxPkghJvoZQ__h3GgxKv";
-        }
-
-        public static class Email
-        {
-            /// <summary>수신 이메일 주소 (Gmail 계정)</summary>
-            public const string RecipientEmail = "heyoonow@gmail.com";
-
-            /// <summary>이메일 발신자명</summary>
-            public const string SenderName = "HeyNowBot Daily Report";
-
-            /// <summary>발신 Gmail 계정</summary>
-            public const string SenderEmail = "heyoonow@gmail.com";
-
-            /// <summary>Gmail 앱 비밀번호 (여기에 입력)</summary>
-            public const string GmailAppPassword = "yalq mmci wuau escl";
-
-            /// <summary>SMTP 서버</summary>
-            public const string SmtpServer = "smtp.gmail.com";
-
-            /// <summary>SMTP 포트</summary>
-            public const int SmtpPort = 587;
-
-            /// <summary>일일 보고서 발송 시간</summary>
-            public const int DailyReportHour = 8;
-
-            /// <summary>일일 보고서 발송 분</summary>
-            public const int DailyReportMinute = 0;
-
-            /// <summary>이메일 제목 형식</summary>
-            public const string SubjectFormat = "[HeyNowBot] 일일 보고서 - {0}";
-
-            /// <summary>이메일 활성화</summary>
-            public const bool EnableEmailNotification = true;
         }
     }
 }

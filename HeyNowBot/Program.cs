@@ -10,14 +10,13 @@ var taskRunService = new TaskRunService(supabaseService, naverFinanceService, rs
 var timeCheckerService = new TimeCheckerService();
 var messageQueue = new MessageQueue(telegramService);
 
-var telegramBot = new TelegramService();
 var processMain = new ProcessMain(
-    telegramBot,
+    telegramService,
     supabaseService,
     taskRunService,
     timeCheckerService,
     messageQueue
 );
 
-// 정상 모드: 아침 8시에 자동으로 메일 발송
+// 정상 모드
 await processMain.RunAsync();

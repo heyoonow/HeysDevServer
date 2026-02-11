@@ -1,0 +1,13 @@
+root = true
+
+# All C# files
+[*.cs]
+charset = utf-8
+indent_style = space
+indent_size = 4
+
+# All .NET files
+[*.{csproj,props,targets}]
+charset = utf-8
+indent_style = space
+indent_size = 2
