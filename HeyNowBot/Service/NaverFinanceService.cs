@@ -13,11 +13,13 @@ namespace HeyNowBot.Service
         public string CurrentPrice { get; set; }
         public string PreviousDayChange { get; set; }
         public string ChangeRate { get; set; }
+        public decimal ChangeAmount { get; set; }
+        public decimal ChangePercent { get; set; }
         public DateTime UpdateTime { get; set; }
     }
 
     /// <summary>
-    /// ³×ÀÌ¹ö ±İÀ¶ ÁÖ½Ä Á¤º¸ Á¶È¸ ¼­ºñ½º
+    /// ë„¤ì´ë²„ ê¸ˆìœµ ì£¼ì‹ ì •ë³´ ì¡°íšŒ ì„œë¹„ìŠ¤
     /// </summary>
     public interface INaverFinanceService
     {
@@ -59,11 +61,11 @@ namespace HeyNowBot.Service
                 htmlDoc.LoadHtml(html);
 
                 var realtimeNode = htmlDoc.DocumentNode.SelectSingleNode("//em[@class='realtime']");
-                return realtimeNode?.InnerText.Contains("½Ç½Ã°£") ?? false;
+                return realtimeNode?.InnerText.Contains("ì‹¤ì‹œê°„") ?? false;
             }
             catch (Exception ex)
             {
-                Log($"Àå »óÅÂ È®ÀÎ ¿À·ù: {ex.Message}");
+                Log($"ì¥ ìƒíƒœ í™•ì¸ ì˜¤ë¥˜: {ex.Message}");
                 return false;
             }
         }
@@ -82,17 +84,17 @@ namespace HeyNowBot.Service
                     UpdateTime = DateTime.Now
                 };
 
-                // È¸»ç¸í
+                // íšŒì‚¬ëª…
                 var nameNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='wrap_company']//h2/a");
                 if (nameNode != null)
                     stockInfo.Name = HtmlEntity.DeEntitize(nameNode.InnerText.Trim());
 
-                // ÇöÀç°¡
+                // í˜„ì¬ê°€
                 var priceNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='today']//p[@class='no_today']/em/span[@class='blind']");
                 if (priceNode != null)
                     stockInfo.CurrentPrice = priceNode.InnerText.Trim();
 
-                // ÀüÀÏ´ëºñ ¹× º¯·ü
+                // ì „ì¼ëŒ€ë¹„ ë° ë³€ë¥ 
                 var noExdayNode = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='today']//p[@class='no_exday']");
                 if (noExdayNode != null)
                 {
@@ -101,6 +103,13 @@ namespace HeyNowBot.Service
                     {
                         stockInfo.PreviousDayChange = blindNodes[0].InnerText.Trim();
                         stockInfo.ChangeRate = blindNodes[1].InnerText.Trim();
+
+                        // ë¬¸ìì—´ì„ ìˆ«ìë¡œ íŒŒì‹±
+                        if (decimal.TryParse(stockInfo.PreviousDayChange.Replace(",", ""), out var changeAmount))
+                            stockInfo.ChangeAmount = changeAmount;
+
+                        if (decimal.TryParse(stockInfo.ChangeRate.Replace("%", "").Replace(",", ""), out var changePercent))
+                            stockInfo.ChangePercent = changePercent;
                     }
                 }
 
@@ -108,7 +117,7 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
-                Log($"ÁÖ½Ä Á¤º¸ Á¶È¸ ¿À·ù ({stockCode}): {ex.Message}");
+                Log($"ì£¼ì‹ ì •ë³´ ì¡°íšŒ ì˜¤ë¥˜ ({stockCode}): {ex.Message}");
                 return null;
             }
         }
@@ -141,7 +150,7 @@ namespace HeyNowBot.Service
             }
             catch (Exception ex)
             {
-                Log($"HTML ·Îµå ¿À·ù ({url}): {ex.Message}");
+                Log($"HTML ë¡œë“œ ì˜¤ë¥˜ ({url}): {ex.Message}");
                 throw;
             }
         }

@@ -62,8 +62,11 @@ namespace HeyNowBot.Service
                 if (stockInfo == null)
                     return Constants.Message.StockInfoFailedMessage;
 
+                var changeSign = stockInfo.ChangeAmount >= 0 ? "+" : "";
+                var changePercentSign = stockInfo.ChangePercent >= 0 ? "+" : "";
+
                 return $"[NaverFinanceService] {stockInfo.Name}({stockInfo.Code}) - " +
-                       $"현재가: {stockInfo.CurrentPrice}, 전일대비: {stockInfo.PreviousDayChange} ({stockInfo.ChangeRate})";
+                       $"현재가: {stockInfo.CurrentPrice}, 전일대비: {changeSign}{stockInfo.ChangeAmount:F0} ({changePercentSign}{stockInfo.ChangePercent:F2}%)";
             }
             catch (Exception ex)
             {
