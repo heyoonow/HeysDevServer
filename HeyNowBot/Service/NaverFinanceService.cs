@@ -104,12 +104,20 @@ namespace HeyNowBot.Service
                         stockInfo.PreviousDayChange = blindNodes[0].InnerText.Trim();
                         stockInfo.ChangeRate = blindNodes[1].InnerText.Trim();
 
+                        // 부모 요소의 클래스를 확인하여 상승/하락 판단
+                        var parentClass = noExdayNode.GetAttributeValue("class", "");
+                        bool isDown = parentClass.Contains("down") || parentClass.Contains("fall");
+
                         // 문자열을 숫자로 파싱
                         if (decimal.TryParse(stockInfo.PreviousDayChange.Replace(",", ""), out var changeAmount))
-                            stockInfo.ChangeAmount = changeAmount;
+                        {
+                            stockInfo.ChangeAmount = isDown ? -changeAmount : changeAmount;
+                        }
 
                         if (decimal.TryParse(stockInfo.ChangeRate.Replace("%", "").Replace(",", ""), out var changePercent))
-                            stockInfo.ChangePercent = changePercent;
+                        {
+                            stockInfo.ChangePercent = isDown ? -changePercent : changePercent;
+                        }
                     }
                 }
 
