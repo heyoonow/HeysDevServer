@@ -39,7 +39,7 @@ namespace HeyNowBot
         public static class Schedule
         {
             /// <summary>야간 알림 금지 활성화 (22:00 ~ 06:00)</summary>
-            public const bool EnableQuietHours = true;
+            public const bool EnableQuietHours = false;
 
             /// <summary>야간 시작 시간</summary>
             public const int QuietHourStart = 22;

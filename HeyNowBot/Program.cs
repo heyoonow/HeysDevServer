@@ -1,6 +1,9 @@
-﻿// See https://aka.ms/new-console-template for more information
+// See https://aka.ms/new-console-template for more information
 using HeyNowBot;
 using HeyNowBot.Service;
+
+Console.WriteLine($"[DEBUG] TELEGRAM_BOT_TOKEN: {System.Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN") ?? "NOT SET"}");
+Console.WriteLine($"[DEBUG] TELEGRAM_CHAT_ID: {System.Environment.GetEnvironmentVariable("TELEGRAM_CHAT_ID") ?? "NOT SET"}");
 
 var telegramService = new TelegramService();
 var supabaseService = new SupabaseService();

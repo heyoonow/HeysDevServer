@@ -6,10 +6,6 @@ using System.Threading.Tasks;
 
 namespace HeyNowBot.Service
 {
-    /// <summary>
-    /// ¸Ş½ÃÁö Å¥ ¹× ¹èÄ¡ Àü¼Û ¼­ºñ½º
-    /// ¾ß°£ Á¶¿ëÇÑ ½Ã°£´ë¸¦ ÇÇÇÏ°í, Áßº¹ ¸Ş½ÃÁö¸¦ Á¦°ÅÇÑ ÈÄ ¹èÄ¡ Àü¼Û
-    /// </summary>
     public interface IMessageQueue
     {
         void Enqueue(string message);
@@ -29,10 +25,9 @@ namespace HeyNowBot.Service
 
         public void Enqueue(string message)
         {
-            // Àü¼Û ±İÁö ½Ã°£´ë È®ÀÎ
             if (!IsSendAllowed())
             {
-                Log($"¾ß°£ ½Ã°£´ë - ¸Ş½ÃÁö ¹ö¸²: {message[..Math.Min(30, message.Length)]}");
+                Log($"ì•¼ê°„ ì‹œê°„ëŒ€ - ë©”ì‹œì§€ ë²„ë¦¼: {message[..Math.Min(30, message.Length)]}");
                 return;
             }
 
@@ -42,7 +37,7 @@ namespace HeyNowBot.Service
             lock (_lockObj)
             {
                 _pendingMessages.Add(message);
-                Log($"¸Ş½ÃÁö Å¥ Ãß°¡ (´ë±âÁß: {_pendingMessages.Count}°³)");
+                Log($"ë©”ì‹œì§€ í ì¶”ê°€ (ëŒ€ê¸°ì¤‘: {_pendingMessages.Count}ê°œ)");
             }
 
             ScheduleFlush();
@@ -69,23 +64,22 @@ namespace HeyNowBot.Service
                 }
                 catch (OperationCanceledException)
                 {
-                    // ÇÃ·¯½Ã Ãë¼ÒµÊ
+                    Log("í”ŒëŸ¬ì‹œ ì·¨ì†Œë¨");
                 }
                 catch (Exception ex)
                 {
-                    Log($"ÇÃ·¯½Ã ¿À·ù: {ex.Message}");
+                    Log($"í”ŒëŸ¬ì‹œ ì˜¤ë¥˜: {ex.Message}");
                 }
             });
         }
 
         private async Task FlushAsync()
         {
-            // ÃÖÁ¾ ¹æ¾î¼±: Àü¼Û ±İÁö ½Ã°£´ë È®ÀÎ
             if (!IsSendAllowed())
             {
                 lock (_lockObj)
                 {
-                    Log($"¾ß°£ ½Ã°£´ë - Å¥ ºñ¿ò: {_pendingMessages.Count}°³ ¸Ş½ÃÁö");
+                    Log($"ì•¼ê°„ ì‹œê°„ëŒ€ - í ë¹„ì›€: {_pendingMessages.Count}ê°œ ë©”ì‹œì§€");
                     _pendingMessages.Clear();
                 }
                 return;
@@ -102,14 +96,21 @@ namespace HeyNowBot.Service
                 _pendingMessages.Clear();
             }
 
-            // Áßº¹ Á¦°Å ÈÄ Àü¼Û
             var uniqueMessages = new HashSet<string>(batch);
             var finalMessage = string.Join("\n\n", uniqueMessages).Trim();
 
             if (!string.IsNullOrWhiteSpace(finalMessage))
             {
-                Log($"¸Ş½ÃÁö Àü¼Û ({uniqueMessages.Count}°³)");
-                await _telegramService.SendMessageAsync(finalMessage);
+                Log($"ë©”ì‹œì§€ ì „ì†¡ ì‹œì‘ ({uniqueMessages.Count}ê°œ)");
+                try
+                {
+                    await _telegramService.SendMessageAsync(finalMessage);
+                    Log("í…”ë ˆê·¸ë¨ ì „ì†¡ ì™„ë£Œ!");
+                }
+                catch (Exception ex)
+                {
+                    Log($"í…”ë ˆê·¸ë¨ ì „ì†¡ ì‹¤íŒ¨: {ex.Message}");
+                }
             }
         }
 
