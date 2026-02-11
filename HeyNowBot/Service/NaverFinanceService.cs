@@ -104,20 +104,41 @@ namespace HeyNowBot.Service
                         stockInfo.PreviousDayChange = blindNodes[0].InnerText.Trim();
                         stockInfo.ChangeRate = blindNodes[1].InnerText.Trim();
 
-                        // 부모 요소의 클래스를 확인하여 상승/하락 판단
-                        var parentClass = noExdayNode.GetAttributeValue("class", "");
-                        bool isDown = parentClass.Contains("down") || parentClass.Contains("fall");
+                        // 방법 1: 문자열에서 "-" 기호를 먼저 확인
+                        bool hasNegativeSign = stockInfo.PreviousDayChange.Contains("-") || 
+                                               stockInfo.ChangeRate.Contains("-");
 
-                        // 문자열을 숫자로 파싱
-                        if (decimal.TryParse(stockInfo.PreviousDayChange.Replace(",", ""), out var changeAmount))
+                        // 방법 2: 부모의 부모 요소 클래스 확인 (더 상위)
+                        var parentDiv = noExdayNode.ParentNode;
+                        bool isDownFromClass = false;
+                        if (parentDiv != null)
+                        {
+                            var grandParent = parentDiv.ParentNode;
+                            if (grandParent != null)
+                            {
+                                var className = grandParent.GetAttributeValue("class", "");
+                                isDownFromClass = className.Contains("down") || className.Contains("fall") || 
+                                                 className.Contains("minus") || className.Contains("red");
+                            }
+                        }
+
+                        // 최종 판단: 문자열의 "-"가 있으면 그걸 우선, 없으면 클래스 확인
+                        bool isDown = hasNegativeSign || isDownFromClass;
+
+                        // 문자열을 숫자로 파싱 (이미 있는 "-" 기호 제거)
+                        var changeAmountStr = stockInfo.PreviousDayChange.Replace("-", "").Replace(",", "");
+                        if (decimal.TryParse(changeAmountStr, out var changeAmount))
                         {
                             stockInfo.ChangeAmount = isDown ? -changeAmount : changeAmount;
                         }
 
-                        if (decimal.TryParse(stockInfo.ChangeRate.Replace("%", "").Replace(",", ""), out var changePercent))
+                        var changeRateStr = stockInfo.ChangeRate.Replace("-", "").Replace("%", "").Replace(",", "");
+                        if (decimal.TryParse(changeRateStr, out var changePercent))
                         {
                             stockInfo.ChangePercent = isDown ? -changePercent : changePercent;
                         }
+
+                        Log($"파싱 결과: PreviousDayChange='{stockInfo.PreviousDayChange}', ChangeRate='{stockInfo.ChangeRate}', isDown={isDown}");
                     }
                 }
 
