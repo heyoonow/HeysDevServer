@@ -8,9 +8,9 @@ IMAGE_NAME="heynowbot-app"
 CONTAINER_NAME="heynowbot-service"
 PROJECT_NAME="HeyNowBot" 
 
-# Telegram 환경 변수 (필수)
-TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
-TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID}"
+# Telegram 환경 변수 (필수) - 기본값으로 설정
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-8439410251:AAEnbnXVmQfzJTNg9PF8Ik8V7q7mVLnCJoo}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-7747196424}"
 
 # -----------------------------------------------------------------
 # ** [중요 수정] 줄 끝 문자 문제 해결 **
