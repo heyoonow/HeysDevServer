@@ -104,11 +104,20 @@ namespace HeyNowBot.Service
                         stockInfo.PreviousDayChange = blindNodes[0].InnerText.Trim();
                         stockInfo.ChangeRate = blindNodes[1].InnerText.Trim();
 
-                        // 방법 1: 문자열에서 "-" 기호를 먼저 확인
+                        // 1. '-' 기호 체크
                         bool hasNegativeSign = stockInfo.PreviousDayChange.Contains("-") || 
                                                stockInfo.ChangeRate.Contains("-");
 
-                        // 방법 2: 부모의 부모 요소 클래스 확인 (더 상위)
+                        // 2. span 클래스 직접 체크 (blindNodes[0]의 부모)
+                        bool isDownFromSpanClass = false;
+                        var changeSpan = blindNodes[0].ParentNode;
+                        if (changeSpan != null)
+                        {
+                            var spanClass = changeSpan.GetAttributeValue("class", "");
+                            isDownFromSpanClass = spanClass.Contains("down") || spanClass.Contains("fall") || spanClass.Contains("minus") || spanClass.Contains("red");
+                        }
+
+                        // 3. 상위 div 클래스 체크 (기존)
                         var parentDiv = noExdayNode.ParentNode;
                         bool isDownFromClass = false;
                         if (parentDiv != null)
@@ -122,10 +131,10 @@ namespace HeyNowBot.Service
                             }
                         }
 
-                        // 최종 판단: 문자열의 "-"가 있으면 그걸 우선, 없으면 클래스 확인
-                        bool isDown = hasNegativeSign || isDownFromClass;
+                        // 최종 판단: '-' 기호 > span 클래스 > 상위 div 클래스 순
+                        bool isDown = hasNegativeSign || isDownFromSpanClass || isDownFromClass;
 
-                        // 문자열을 숫자로 파싱 (이미 있는 "-" 기호 제거)
+                        // 문자열을 숫자로 파싱 (이미 있는 '-' 기호 제거)
                         var changeAmountStr = stockInfo.PreviousDayChange.Replace("-", "").Replace(",", "");
                         if (decimal.TryParse(changeAmountStr, out var changeAmount))
                         {
