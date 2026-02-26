@@ -24,7 +24,7 @@ namespace HeyNowBot.Service
     public interface INaverFinanceService
     {
         Task<StockInfo> GetStockInfoAsync(string stockCode);
-        Task<bool> IsMarketOpenAsync(string stockCode = "005930");
+        Task<bool> IsMarketOpenAsync(string stockCode);
     }
 
     public class NaverFinanceService : INaverFinanceService
@@ -41,7 +41,7 @@ namespace HeyNowBot.Service
             _httpClient.DefaultRequestHeaders.Add("Accept-Language", Constants.UserAgent.AcceptLanguage);
         }
 
-        public async Task<bool> IsMarketOpenAsync(string stockCode = "005930")
+        public async Task<bool> IsMarketOpenAsync(string stockCode)
         {
             var now = DateTime.Now;
             

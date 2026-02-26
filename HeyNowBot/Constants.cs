@@ -22,7 +22,7 @@ namespace HeyNowBot
         public static class Stock
         {
             /// <summary>모니터링 주식 코드 (삼성전자)</summary>
-            public const string MonitoringStockCode = "360750";
+            public const string MonitoringStockCode = "237350";
         }
 
         public static class Rss
