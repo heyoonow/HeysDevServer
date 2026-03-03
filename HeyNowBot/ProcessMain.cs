@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using HeyNowBot.Service;
+using HeyNowBot.Domain.Interfaces;
 
 namespace HeyNowBot
 {
@@ -47,8 +47,6 @@ namespace HeyNowBot
         private void RegisterEventHandlers()
         {
             _timeCheckerService.OnHourReached += HandleHourReachedAsync;
-            _timeCheckerService.On10MinReached += HandleOn10MinReachedAsync;
-            _timeCheckerService.On30MinReached += HandleOn30MinReachedAsync;
         }
 
         private async Task HandleHourReachedAsync(int hour, int minute)
@@ -56,6 +54,9 @@ namespace HeyNowBot
             try
             {
                 var parts = new List<string>();
+
+                // 헤더: 몇시입니다
+                parts.Add($"[HeyNowBot] {hour}시입니다.");
 
                 // 3시간 단위 방문자 통계
                 if (hour % Constants.Schedule.VisitCountIntervalHours == 0)
@@ -65,59 +66,24 @@ namespace HeyNowBot
                         parts.Add(msg);
                 }
 
+                // 주식 시세 (장중 시간대 - 평일만)
+                if (IsStockTradingHours(hour, minute))
+                {
+                    var stockMsg = await _taskRunService.GetStockPriceMessageAsync();
+                    if (!string.IsNullOrWhiteSpace(stockMsg))
+                        parts.Add(stockMsg);
+                }
+
                 // RSS 뉴스
                 var rssMsg = await _taskRunService.GetRssNewsMessageAsync(isDebug: false);
                 if (!string.IsNullOrWhiteSpace(rssMsg))
                     parts.Add(rssMsg);
 
-                if (parts.Count > 0)
-                {
-                    _messageQueue.Enqueue(string.Join("\n\n", parts));
-                }
+                _messageQueue.Enqueue(string.Join("\n\n", parts));
             }
             catch (Exception ex)
             {
                 Log($"시간 도달 이벤트 처리 오류: {ex.Message}");
-            }
-        }
-
-        private async Task HandleOn10MinReachedAsync(int hour, int minute)
-        {
-            try
-            {
-                if (!IsStockTradingHours(hour, minute))
-                    return;
-
-                if (hour < 9 || hour >= Constants.Schedule.StockMarketMorningEndHour)
-                    return;
-
-                var msg = await _taskRunService.GetStockPriceMessageAsync();
-                if (!string.IsNullOrWhiteSpace(msg))
-                    _messageQueue.Enqueue(msg);
-            }
-            catch (Exception ex)
-            {
-                Log($"10분 이벤트 처리 오류: {ex.Message}");
-            }
-        }
-
-        private async Task HandleOn30MinReachedAsync(int hour, int minute)
-        {
-            try
-            {
-                if (!IsStockTradingHours(hour, minute))
-                    return;
-
-                if (hour < Constants.Schedule.StockMarketMorningEndHour)
-                    return;
-
-                var msg = await _taskRunService.GetStockPriceMessageAsync();
-                if (!string.IsNullOrWhiteSpace(msg))
-                    _messageQueue.Enqueue(msg);
-            }
-            catch (Exception ex)
-            {
-                Log($"30분 이벤트 처리 오류: {ex.Message}");
             }
         }
 
