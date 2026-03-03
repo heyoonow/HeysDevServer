@@ -1,18 +1,14 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
+using HeyNowBot.Domain.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Infrastructure.Messaging
 {
     /// <summary>
     /// Telegram 메시지 전송 서비스
     /// </summary>
-    public interface ITelegramService
-    {
-        Task SendMessageAsync(string text);
-    }
-
     public class TelegramService : ITelegramService
     {
         private readonly TelegramBotClient _bot;
@@ -51,5 +47,5 @@ namespace HeyNowBot.Service
         {
             Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TelegramService] {message}");
         }
-    }   
+    }
 }

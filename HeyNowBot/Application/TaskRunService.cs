@@ -3,22 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using HeyNowBot.Model;
+using HeyNowBot.Domain.Entities;
+using HeyNowBot.Domain.Interfaces;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Application
 {
     /// <summary>
-    /// 작업 실행 서비스
+    /// 작업 실행 유즈케이스 - RSS, 주식, 방문자 통계 조율
     /// </summary>
-    public interface ITaskRunService
-    {
-        Task<string?> GetCountAlarmMessageAsync(int hour);
-        Task<string?> GetStockPriceMessageAsync();
-        Task InitializeRssAsync();
-        Task<string?> GetRssNewsMessageAsync(bool isDebug = false);
-        Task<List<VisitLogModel>?> GetVisitListAsync();
-    }
-
     public class TaskRunService : ITaskRunService
     {
         private readonly ISupabaseService _supabase;
@@ -78,7 +70,7 @@ namespace HeyNowBot.Service
         public async Task InitializeRssAsync()
         {
             Log(Constants.Message.RssInitializationMessage);
-            
+
             foreach (var url in Constants.Rss.FeedUrls)
             {
                 try
@@ -144,7 +136,7 @@ namespace HeyNowBot.Service
             }
         }
 
-        public async Task<List<VisitLogModel>?> GetVisitListAsync()
+        public async Task<List<VisitLog>?> GetVisitListAsync()
         {
             try
             {

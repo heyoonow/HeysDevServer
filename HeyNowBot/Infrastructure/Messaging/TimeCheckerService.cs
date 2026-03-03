@@ -1,24 +1,14 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using HeyNowBot.Domain.Interfaces;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Infrastructure.Messaging
 {
     /// <summary>
     /// 시간 기반 이벤트 트리거 서비스
     /// 분 단위로 1회 실행되며, 1분, 10분, 30분, 1시간 주기 이벤트를 발생시킴
     /// </summary>
-    public interface ITimeCheckerService
-    {
-        event Func<int, int, Task> OnHourReached;
-        event Func<int, int, Task> On30MinReached;
-        event Func<int, int, Task> On10MinReached;
-        event Func<int, int, Task> On1MinReached;
-
-        void Start();
-        void Stop();
-    }
-
     public class TimeCheckerService : ITimeCheckerService
     {
         private Timer _timer;
@@ -97,8 +87,4 @@ namespace HeyNowBot.Service
             Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [TimeCheckerService] {message}");
         }
     }
-
-    // 레거시 호환성 유지를 위한 별칭
-    [Obsolete("TimeCheckerService를 사용하세요")]
-    public class TimeChekerService : TimeCheckerService { }
 }

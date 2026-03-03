@@ -5,25 +5,14 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using HeyNowBot.Domain.Entities;
+using HeyNowBot.Domain.Interfaces;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Infrastructure.External
 {
-    public class RssItem
-    {
-        public string Title { get; set; }
-        public string Link { get; set; }
-        public DateTime PubDate { get; set; }
-        public string Category { get; set; }
-    }
-
     /// <summary>
-    /// RSS ÇÇµå ÆÄ½Ì ¹× »õ ±Û °¨Áö ¼­ºñ½º
+    /// RSS í”¼ë“œ íŒŒì‹± ë° ìƒˆ ê¸€ ê°ì§€ ì„œë¹„ìŠ¤
     /// </summary>
-    public interface IRssService
-    {
-        Task<List<RssItem>> GetNewFeedsAsync(string rssUrl, bool isDebug = false);
-    }
-
     public class RssService : IRssService
     {
         private readonly HttpClient _httpClient;
@@ -66,7 +55,7 @@ namespace HeyNowBot.Service
 
                 if (isDebug)
                 {
-                    Log($"µğ¹ö±× ¸ğµå - ÃÖ½Å ±Û 1°³ °­Á¦ ¹İÈ¯: {rssUrl}");
+                    Log($"ë””ë²„ê·¸ ëª¨ë“œ - ìµœì‹  ê¸€ 1ê°œë§Œ ë°˜í™˜: {rssUrl}");
                     return items.Take(1).ToList();
                 }
 
@@ -75,7 +64,7 @@ namespace HeyNowBot.Service
                 if (!_lastCheckTimes.ContainsKey(rssUrl))
                 {
                     _lastCheckTimes[rssUrl] = latestItemDate;
-                    Log($"{Constants.Message.RssInitCompleteMessage}: {rssUrl} (ÃÖ½Å±Û: {latestItemDate:yyyy-MM-dd HH:mm:ss})");
+                    Log($"{Constants.Message.RssInitCompleteMessage}: {rssUrl} (ìµœì‹ ê¸°ì¤€: {latestItemDate:yyyy-MM-dd HH:mm:ss})");
                     return new List<RssItem>();
                 }
 

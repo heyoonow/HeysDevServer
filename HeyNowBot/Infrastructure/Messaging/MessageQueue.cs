@@ -3,14 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using HeyNowBot.Domain.Interfaces;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Infrastructure.Messaging
 {
-    public interface IMessageQueue
-    {
-        void Enqueue(string message);
-    }
-
     public class MessageQueue : IMessageQueue
     {
         private readonly ITelegramService _telegramService;

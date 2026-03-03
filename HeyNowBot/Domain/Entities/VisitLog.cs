@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
-namespace HeyNowBot.Model
+namespace HeyNowBot.Domain.Entities
 {
-
     [Table("visit_log")]
-    public class VisitLogModel : BaseModel
+    public class VisitLog : BaseModel
     {
         [PrimaryKey("id", false)]
         [Column("id")]  // bigserial → false(자동증가)
@@ -36,7 +31,7 @@ namespace HeyNowBot.Model
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
-        
+
         [Column("update_at")]
         public DateTime? UpdateAt { get; set; }
 
@@ -47,6 +42,6 @@ namespace HeyNowBot.Model
         public string Country { get; set; }   // 주의: DB에 conTry 로 되어 있음 (오타 포함 그대로 해야 함)
 
         [Column("count")]
-        public int Count{ get; set; }
+        public int Count { get; set; }
     }
 }

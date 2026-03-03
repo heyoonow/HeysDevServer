@@ -3,30 +3,14 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using HeyNowBot.Domain.Entities;
+using HeyNowBot.Domain.Interfaces;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Infrastructure.External
 {
-    public class StockInfo
-    {
-        public string Code { get; set; }
-        public string Name { get; set; }
-        public string CurrentPrice { get; set; }
-        public string PreviousDayChange { get; set; }
-        public string ChangeRate { get; set; }
-        public decimal ChangeAmount { get; set; }
-        public decimal ChangePercent { get; set; }
-        public DateTime UpdateTime { get; set; }
-    }
-
     /// <summary>
     /// 네이버 금융 주식 정보 조회 서비스
     /// </summary>
-    public interface INaverFinanceService
-    {
-        Task<StockInfo> GetStockInfoAsync(string stockCode);
-        Task<bool> IsMarketOpenAsync(string stockCode);
-    }
-
     public class NaverFinanceService : INaverFinanceService
     {
         private readonly HttpClient _httpClient;
@@ -44,13 +28,13 @@ namespace HeyNowBot.Service
         public async Task<bool> IsMarketOpenAsync(string stockCode)
         {
             var now = DateTime.Now;
-            
+
             if (now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
                 return false;
 
             if (now.Hour < 9 || now.Hour > 15)
                 return false;
-            
+
             if (now.Hour == 15 && now.Minute > 30)
                 return false;
 
@@ -105,7 +89,7 @@ namespace HeyNowBot.Service
                         stockInfo.ChangeRate = blindNodes[1].InnerText.Trim();
 
                         // 1. '-' 기호 체크
-                        bool hasNegativeSign = stockInfo.PreviousDayChange.Contains("-") || 
+                        bool hasNegativeSign = stockInfo.PreviousDayChange.Contains("-") ||
                                                stockInfo.ChangeRate.Contains("-");
 
                         // 2. span 클래스 직접 체크 (blindNodes[0]의 부모)
@@ -117,7 +101,7 @@ namespace HeyNowBot.Service
                             isDownFromSpanClass = spanClass.Contains("down") || spanClass.Contains("fall") || spanClass.Contains("minus") || spanClass.Contains("red");
                         }
 
-                        // 3. 상위 div 클래스 체크 (기존)
+                        // 3. 상위 div 클래스 체크
                         var parentDiv = noExdayNode.ParentNode;
                         bool isDownFromClass = false;
                         if (parentDiv != null)
@@ -126,7 +110,7 @@ namespace HeyNowBot.Service
                             if (grandParent != null)
                             {
                                 var className = grandParent.GetAttributeValue("class", "");
-                                isDownFromClass = className.Contains("down") || className.Contains("fall") || 
+                                isDownFromClass = className.Contains("down") || className.Contains("fall") ||
                                                  className.Contains("minus") || className.Contains("red");
                             }
                         }

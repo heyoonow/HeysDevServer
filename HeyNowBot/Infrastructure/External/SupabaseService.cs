@@ -1,21 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using HeyNowBot.Model;
+using HeyNowBot.Domain.Entities;
+using HeyNowBot.Domain.Interfaces;
 using Supabase;
 
-namespace HeyNowBot.Service
+namespace HeyNowBot.Infrastructure.External
 {
     /// <summary>
     /// Supabase 데이터베이스 접근 서비스
     /// </summary>
-    public interface ISupabaseService
-    {
-        Task<List<VisitLogModel>?> GetVisitListAsync();
-        Task UpdateVisitLogAsync();
-    }
-
     public class SupabaseService : ISupabaseService
     {
         private bool _isInitialized = false;
@@ -45,7 +40,7 @@ namespace HeyNowBot.Service
             }
         }
 
-        public async Task<List<VisitLogModel>?> GetVisitListAsync()
+        public async Task<List<VisitLog>?> GetVisitListAsync()
         {
             if (!await EnsureInitializedAsync())
                 return null;
@@ -53,7 +48,7 @@ namespace HeyNowBot.Service
             try
             {
                 var dt = DateTime.Now.AddDays(-1);
-                var result = await _supabaseClient.From<VisitLogModel>()
+                var result = await _supabaseClient.From<VisitLog>()
                     .Where(x => x.CreatedAt >= dt)
                     .Get();
 
@@ -74,7 +69,7 @@ namespace HeyNowBot.Service
             try
             {
                 var dt = DateTime.Today.AddDays(-3).Date;
-                var result = await _supabaseClient.From<VisitLogModel>()
+                var result = await _supabaseClient.From<VisitLog>()
                     .Where(x => x.Count == -1 && x.CreatedAt >= dt)
                     .Get();
 
@@ -84,12 +79,12 @@ namespace HeyNowBot.Service
 
                 foreach (var item in list)
                 {
-                    var r = await _supabaseClient.From<VisitLogModel>()
+                    var r = await _supabaseClient.From<VisitLog>()
                         .Where(x => x.UserId == item.UserId && x.CreatedAt < item.CreatedAt)
                         .Get();
 
                     await _supabaseClient
-                        .From<VisitLogModel>()
+                        .From<VisitLog>()
                         .Where(x => x.Id == item.Id)
                         .Set(x => x.Count, r.Models.Count)
                         .Update();
@@ -117,8 +112,4 @@ namespace HeyNowBot.Service
             Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [SupabaseService] {message}");
         }
     }
-
-    // 레거시 호환성 유지를 위한 별칭
-    [Obsolete("SupabaseService를 사용하세요")]
-    public class ServiceSupabase : SupabaseService { }
 }
